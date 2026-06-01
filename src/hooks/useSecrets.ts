@@ -7,7 +7,7 @@ import {
   updateSecret as updateSecretApi,
 } from "@/lib/tauri"
 import { emptySecretForm, splitTags } from "@/constants"
-import type { Secret, SecretCategory, SecretForm, SecretInput } from "@/types"
+import type { PresetDef, Secret, SecretCategory, SecretForm, SecretInput } from "@/types"
 
 export interface UseSecrets {
   secrets: Secret[]
@@ -23,6 +23,7 @@ export interface UseSecrets {
   startEdit: (secret: Secret) => void
   cancelForm: () => void
   save: () => Promise<Secret | null>
+  createFromPreset: (preset: PresetDef) => Promise<Secret | null>
   remove: (id: string, name: string) => Promise<void>
   refresh: () => Promise<void>
 }
@@ -143,10 +144,53 @@ export function useSecrets(): UseSecrets {
     } catch (e) {
       show(extractMessage(e), "error")
       return null
-    } finally {
-      setSubmitting(false)
-    }
-  }, [buildInput, editingId, form, refresh, secrets, show])
+      } finally {
+        setSubmitting(false)
+      }
+    },
+    [buildInput, editingId, form, refresh, secrets, show],
+  )
+
+  const createFromPreset = useCallback(
+    async (preset: PresetDef): Promise<Secret | null> => {
+      if (
+        secrets.some(
+          (s) => s.name.toLowerCase() === preset.name.toLowerCase(),
+        )
+      ) {
+        show(
+          `A service named "${preset.name}" already exists.`,
+          "error",
+        )
+        return null
+      }
+      try {
+        setSubmitting(true)
+        const input: SecretInput = {
+          name: preset.name,
+          category: preset.category,
+          baseUrl: preset.baseUrl,
+          modelName: preset.modelName || null,
+          tags: splitTags(preset.tags),
+          description: preset.description ?? null,
+          dashboardUrl: null,
+          docsUrl: null,
+          loginUrl: null,
+          notes: null,
+        }
+        const created = await createSecret(input)
+        show(`Created service group: ${created.name}`, "success")
+        await refresh()
+        return created
+      } catch (e) {
+        show(extractMessage(e), "error")
+        return null
+      } finally {
+        setSubmitting(false)
+      }
+    },
+    [refresh, secrets, show],
+  )
 
   const remove = useCallback(
     async (id: string, name: string) => {
@@ -181,6 +225,7 @@ export function useSecrets(): UseSecrets {
     startEdit,
     cancelForm,
     save,
+    createFromPreset,
     remove,
     refresh,
   }

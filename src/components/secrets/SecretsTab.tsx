@@ -48,25 +48,49 @@ export function SecretsTab({
     onSelectSecret(id)
   }
 
-  function handlePresetApply(preset: PresetDef) {
-    secrets.startCreate()
-    secrets.setForm({
-      name: preset.name,
-      category: preset.category,
-      baseUrl: preset.baseUrl,
-      modelName: preset.modelName,
-      tags: preset.tags,
-      description: preset.description ?? "",
-      dashboardUrl: "",
-    })
-    apiKeys.setForm({
+  async function handlePresetApply(preset: PresetDef) {
+    if (
+      secrets.secrets.some(
+        (s) => s.name.toLowerCase() === preset.name.toLowerCase(),
+      )
+    ) {
+      secrets.startCreate()
+      secrets.setForm({
+        name: preset.name,
+        category: preset.category,
+        baseUrl: preset.baseUrl,
+        modelName: preset.modelName,
+        tags: preset.tags,
+        description: preset.description ?? "",
+        dashboardUrl: "",
+      })
+      apiKeys.setForm({
+        name: preset.apiKey.name,
+        value: "",
+        envName: preset.apiKey.env,
+        includeByDefault: true,
+        tags: "",
+      })
+      show(
+        `"${preset.name}" already exists — form pre-filled, pick a different name.`,
+        "info",
+      )
+      return
+    }
+
+    const created = await secrets.createFromPreset(preset)
+    if (!created) return
+    onSelectSecret(created.id)
+    apiKeys.openForm({
       name: preset.apiKey.name,
-      value: "",
       envName: preset.apiKey.env,
       includeByDefault: true,
       tags: "",
     })
-    show(`Preset loaded for ${preset.name}`, "info")
+    show(
+      `Created ${preset.name}. Paste the API key value to finish.`,
+      "info",
+    )
   }
 
   return (
