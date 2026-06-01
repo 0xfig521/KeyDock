@@ -45,6 +45,7 @@ impl AppStore {
 
     fn migrate(&self) -> Result<()> {
         self.reset_legacy_schema_if_needed()?;
+        self.add_missing_columns()?;
         self.conn.execute_batch(
             "
             PRAGMA foreign_keys = ON;
@@ -125,11 +126,7 @@ impl AppStore {
         if exists == 0 {
             return Ok(());
         }
-        let mut stmt = self.conn.prepare("PRAGMA table_info(secrets)")?;
-        let columns = stmt
-            .query_map([], |row| row.get::<_, String>(1))?
-            .collect::<rusqlite::Result<Vec<_>>>()?;
-        if columns.iter().any(|column| column == "category") {
+        if self.column_exists("secrets", "category")? {
             return Ok(());
         }
         self.conn.execute_batch(
@@ -144,6 +141,35 @@ impl AppStore {
             ",
         )?;
         Ok(())
+    }
+
+    fn add_missing_columns(&self) -> Result<()> {
+        if self.table_exists("workspaces")? && !self.column_exists("workspaces", "tags_json")? {
+            self.conn.execute(
+                "ALTER TABLE workspaces ADD COLUMN tags_json TEXT NOT NULL DEFAULT '[]'",
+                [],
+            )?;
+        }
+        Ok(())
+    }
+
+    fn table_exists(&self, table: &str) -> Result<bool> {
+        let count: i64 = self.conn.query_row(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?1",
+            [table],
+            |row| row.get(0),
+        )?;
+        Ok(count > 0)
+    }
+
+    fn column_exists(&self, table: &str, column: &str) -> Result<bool> {
+        let mut stmt = self
+            .conn
+            .prepare(&format!("PRAGMA table_info({})", table))?;
+        let columns: Vec<String> = stmt
+            .query_map([], |row| row.get::<_, String>(1))?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        Ok(columns.iter().any(|c| c == column))
     }
 
     pub fn create_secret(&self, input: SecretInput) -> Result<Secret> {
@@ -880,6 +906,48 @@ mod tests {
             .list_workspace_variables("personal")
             .unwrap()
             .is_empty());
+    }
+
+    #[test]
+    fn migrate_adds_missing_tags_json_to_legacy_workspaces() {
+        let path = std::env::temp_dir().join(format!("keydock-test-{}.sqlite3", Uuid::new_v4()));
+        let conn = rusqlite::Connection::open(&path).unwrap();
+        conn.execute_batch(
+            "
+            CREATE TABLE secrets (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                category TEXT NOT NULL,
+                base_url TEXT,
+                model_name TEXT,
+                tags_json TEXT NOT NULL DEFAULT '[]',
+                description TEXT,
+                dashboard_url TEXT,
+                docs_url TEXT,
+                login_url TEXT,
+                notes TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            CREATE TABLE workspaces (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            INSERT INTO workspaces (id, name, description, created_at, updated_at)
+            VALUES ('ws-1', 'legacy', NULL, '2024-01-01', '2024-01-01');
+            ",
+        )
+        .unwrap();
+        drop(conn);
+
+        let store = AppStore::open(path, vec![3_u8; 32]).unwrap();
+        let workspaces = store.list_workspaces().unwrap();
+        assert_eq!(workspaces.len(), 1);
+        assert_eq!(workspaces[0].name, "legacy");
+        assert!(workspaces[0].tags.is_empty());
     }
 
     #[test]
