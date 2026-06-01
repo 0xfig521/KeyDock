@@ -326,13 +326,13 @@ impl AppStore {
             .ok_or_else(|| anyhow!("api key not found: {secret_and_key}"))
     }
 
-    pub fn reveal_api_key(&self, id_or_path: &str) -> Result<String> {
+    pub fn reveal_api_key(&self, id_or_path: &str, workspace_id: Option<&str>) -> Result<String> {
         let api_key = self.resolve_api_key(id_or_path)?;
         let value = self.api_key_value(&api_key.id)?;
         self.audit(
             "reveal_api_key",
             Some(&api_key.id),
-            None,
+            workspace_id,
             api_key.env_name.as_deref(),
         )?;
         Ok(value)

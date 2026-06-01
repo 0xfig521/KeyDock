@@ -9,7 +9,7 @@ import type { ApiKey } from "@/types"
 interface ApiKeyCardProps {
   apiKey: ApiKey
   revealed: string | undefined
-  onReveal: (key: ApiKey) => void
+  onReveal: (key: ApiKey, workspaceId: string) => void
   onDelete: (key: ApiKey) => void
   workspaceIdForAudit: string
 }
@@ -73,7 +73,7 @@ function ApiKeyCardImpl({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onReveal(apiKey)}
+            onClick={() => onReveal(apiKey, workspaceIdForAudit)}
             className="h-7 w-7 p-0 border-zinc-900 text-zinc-400 hover:text-zinc-200"
             title="Reveal Key"
           >

@@ -52,6 +52,12 @@ export function SecretDetails({
     [apiKeys.remove],
   )
 
+  const handleReveal = useCallback(
+    (key: ApiKey, workspaceId: string) =>
+      apiKeys.reveal(key, workspaceId || null),
+    [apiKeys.reveal],
+  )
+
   return (
     <div className="space-y-6">
       {/* Service header */}
@@ -164,7 +170,7 @@ export function SecretDetails({
                 key={key.id}
                 apiKey={key}
                 revealed={apiKeys.getRevealed(key.id)}
-                onReveal={apiKeys.reveal}
+                onReveal={handleReveal}
                 onDelete={handleDelete}
                 workspaceIdForAudit={selectedWorkspaceId}
               />

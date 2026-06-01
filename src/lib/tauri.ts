@@ -51,8 +51,8 @@ export const createApiKey = (secret: string, input: ApiKeyInput) =>
 export const deleteApiKey = (apiKey: string) =>
   invoke<void>("delete_api_key", { apiKey })
 
-export const revealApiKey = (apiKey: string) =>
-  invoke<string>("reveal_api_key", { apiKey })
+export const revealApiKey = (apiKey: string, workspaceId: string | null = null) =>
+  invoke<string>("reveal_api_key", { apiKey, workspaceId })
 
 // --- Workspaces ---
 

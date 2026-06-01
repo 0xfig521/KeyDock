@@ -21,7 +21,7 @@ export interface UseApiKeys {
   closeForm: () => void
   save: (secretId: string) => Promise<ApiKey | null>
   remove: (id: string, name: string) => Promise<void>
-  reveal: (apiKey: ApiKey) => Promise<void>
+  reveal: (apiKey: ApiKey, workspaceId?: string | null) => Promise<void>
   getRevealed: (id: string) => string | undefined
   refresh: () => Promise<void>
   clearRevealed: () => void
@@ -104,13 +104,13 @@ export function useApiKeys(): UseApiKeys {
   )
 
   const reveal = useCallback(
-    async (apiKey: ApiKey) => {
+    async (apiKey: ApiKey, workspaceId: string | null = null) => {
       // Anchor the 30s auto-hide to the first reveal so a flurry of
       // 👁 clicks cannot push the deadline forward or burn extra
       // backend decrypts.
       if (timersRef.current.has(apiKey.id)) return
       try {
-        const value = await revealApiKeyApi(apiKey.id)
+        const value = await revealApiKeyApi(apiKey.id, workspaceId)
         revealedRef.current[apiKey.id] = value
         setRevealedVersion((v) => v + 1)
         show(`Revealed: ${apiKey.name}`, "info")

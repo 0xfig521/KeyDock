@@ -124,8 +124,14 @@ fn delete_api_key(state: State<'_, AppState>, api_key: String) -> CommandResult<
 }
 
 #[tauri::command]
-fn reveal_api_key(state: State<'_, AppState>, api_key: String) -> CommandResult<String> {
-    Ok(state.store()?.reveal_api_key(&api_key)?)
+fn reveal_api_key(
+    state: State<'_, AppState>,
+    api_key: String,
+    workspace_id: Option<String>,
+) -> CommandResult<String> {
+    Ok(state
+        .store()?
+        .reveal_api_key(&api_key, workspace_id.as_deref())?)
 }
 
 #[tauri::command]

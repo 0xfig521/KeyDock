@@ -323,7 +323,7 @@ fn api_key_command(store: &AppStore, command: ApiKeyCommand) -> Result<()> {
             }
         }
         ApiKeyCommand::Get { api_key } => {
-            println!("{}", store.reveal_api_key(&api_key)?);
+            println!("{}", store.reveal_api_key(&api_key, None)?);
         }
         ApiKeyCommand::Delete { api_key } => {
             store.delete_api_key(&api_key)?;
