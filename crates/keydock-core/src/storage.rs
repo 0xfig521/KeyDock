@@ -299,9 +299,9 @@ impl AppStore {
         if let Some(api_key) = self.get_api_key_by_id(secret_and_key)? {
             return Ok(api_key);
         }
-        let (secret_name, key_name) = secret_and_key.split_once('/').ok_or_else(|| {
-            anyhow!("api key must be an id or secret/key-name: {secret_and_key}")
-        })?;
+        let (secret_name, key_name) = secret_and_key
+            .split_once('/')
+            .ok_or_else(|| anyhow!("api key must be an id or secret/key-name: {secret_and_key}"))?;
         let secret = self.resolve_secret(secret_name)?;
         self.conn
             .query_row(
@@ -401,7 +401,7 @@ impl AppStore {
             params![id, workspace.id, api_key.secret_id, api_key.id, env_name, sort_order, now],
         )?;
         self.audit(
-            "edit_workspace",
+            "map_workspace_variable",
             Some(&api_key.id),
             Some(&workspace.id),
             Some(env_name),
@@ -461,7 +461,12 @@ impl AppStore {
             "DELETE FROM workspace_variables WHERE workspace_id = ?1 AND env_name = ?2",
             params![workspace.id, env_name],
         )?;
-        self.audit("edit_workspace", None, Some(&workspace.id), Some(env_name))?;
+        self.audit(
+            "unmap_workspace_variable",
+            None,
+            Some(&workspace.id),
+            Some(env_name),
+        )?;
         Ok(())
     }
 
@@ -882,10 +887,7 @@ mod tests {
             env.get("OPENAI_BASE_URL").unwrap(),
             "https://openrouter.ai/api/v1"
         );
-        assert_eq!(
-            env.get("MODEL_NAME").unwrap(),
-            "anthropic/claude-sonnet-4"
-        );
+        assert_eq!(env.get("MODEL_NAME").unwrap(), "anthropic/claude-sonnet-4");
         assert_eq!(env.get("OPENAI_API_KEY").unwrap(), "sk-test");
     }
 }
