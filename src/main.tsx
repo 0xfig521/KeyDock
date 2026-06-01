@@ -54,7 +54,7 @@ import "./styles.css"
 
 // --- TYPES ---
 type SecretCategory =
-  | "ai"
+  | "aI"
   | "cloud"
   | "search"
   | "database"
@@ -139,7 +139,7 @@ interface ToastMessage {
 // --- CONSTANTS & PRESETS ---
 const emptySecretForm: SecretForm = {
   name: "",
-  category: "ai",
+  category: "aI",
   baseUrl: "",
   modelName: "",
   tags: "",
@@ -158,7 +158,7 @@ const emptyApiKeyForm: ApiKeyForm = {
 const presets = [
   {
     name: "OpenRouter",
-    category: "ai" as SecretCategory,
+    category: "aI" as SecretCategory,
     baseUrl: "https://openrouter.ai/api/v1",
     modelName: "anthropic/claude-3.5-sonnet",
     tags: "ai,llm",
@@ -169,7 +169,7 @@ const presets = [
   },
   {
     name: "DeepSeek",
-    category: "ai" as SecretCategory,
+    category: "aI" as SecretCategory,
     baseUrl: "https://api.deepseek.com/v1",
     modelName: "deepseek-chat",
     tags: "ai,llm",
@@ -899,7 +899,7 @@ function App() {
                             </SelectTrigger>
                             <SelectContent className="bg-zinc-900 border-zinc-800">
                               <SelectGroup>
-                                {["ai", "cloud", "search", "database", "devTool", "payment", "custom"].map((cat) => (
+                                {["aI", "cloud", "search", "database", "devTool", "payment", "custom"].map((cat) => (
                                   <SelectItem key={cat} value={cat} className="text-xs">
                                     {cat}
                                   </SelectItem>
