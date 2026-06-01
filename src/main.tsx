@@ -240,6 +240,7 @@ function App() {
 
   // Notifications
   const [toast, setToast] = useState<ToastMessage | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Trigger floating toast
   const showToast = (message: string, type: "info" | "success" | "error" = "info") => {
@@ -327,7 +328,9 @@ function App() {
 
   async function submitMasterPassword(event: FormEvent) {
     event.preventDefault()
+    if (isSubmitting) return
     try {
+      setIsSubmitting(true)
       if (vaultInitialized) {
         await invoke("unlock_master_password", { password: masterPassword })
         showToast("Vault unlocked successfully", "success")
@@ -341,6 +344,8 @@ function App() {
       await refresh()
     } catch (e) {
       showError(e)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -358,12 +363,14 @@ function App() {
 
   async function handleCreateSecret(event: FormEvent) {
     event.preventDefault()
+    if (isSubmitting) return
     const exists = secrets.some((s) => s.name.toLowerCase() === secretForm.name.toLowerCase())
     if (exists) {
       showToast(`A service group with the name "${secretForm.name}" already exists.`, "error")
       return
     }
     try {
+      setIsSubmitting(true)
       const secret = await invoke<Secret>("create_secret", {
         input: {
           name: secretForm.name,
@@ -384,6 +391,8 @@ function App() {
       await refresh(secret.id)
     } catch (e) {
       showError(e)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -402,12 +411,14 @@ function App() {
   async function handleCreateApiKey(event: FormEvent) {
     event.preventDefault()
     if (!selectedSecret) return
+    if (isSubmitting) return
     const exists = selectedApiKeys.some((k) => k.name.toLowerCase() === apiKeyForm.name.toLowerCase())
     if (exists) {
       showToast(`An API key with the name "${apiKeyForm.name}" already exists in this service.`, "error")
       return
     }
     try {
+      setIsSubmitting(true)
       const apiKey = await invoke<ApiKey>("create_api_key", {
         secret: selectedSecret,
         input: {
@@ -425,6 +436,8 @@ function App() {
       await refresh(selectedSecret)
     } catch (e) {
       showError(e)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -461,12 +474,14 @@ function App() {
   async function handleCreateWorkspace(event: FormEvent) {
     event.preventDefault()
     if (!workspaceFormName.trim()) return
+    if (isSubmitting) return
     const exists = workspaces.some((w) => w.name.toLowerCase() === workspaceFormName.toLowerCase())
     if (exists) {
       showToast(`A workspace with the name "${workspaceFormName}" already exists.`, "error")
       return
     }
     try {
+      setIsSubmitting(true)
       const ws = await invoke<Workspace>("create_workspace", {
         name: workspaceFormName,
         description: null,
@@ -476,6 +491,8 @@ function App() {
       await refresh(selectedSecret, ws.id)
     } catch (e) {
       showError(e)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -494,7 +511,9 @@ function App() {
   async function handleMapVariable(event: FormEvent) {
     event.preventDefault()
     if (!selectedWorkspace || !mappingApiKey) return
+    if (isSubmitting) return
     try {
+      setIsSubmitting(true)
       await invoke("set_workspace_variable", {
         workspace: selectedWorkspace,
         envName: mappingEnv || null,
@@ -507,6 +526,8 @@ function App() {
       await refresh(selectedSecret, selectedWorkspace)
     } catch (e) {
       showError(e)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -660,7 +681,7 @@ function App() {
                 </div>
               </CardContent>
               <CardFooter className="p-6 pt-4 border-t border-zinc-900 bg-muted/20">
-                <Button className="w-full h-10 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-md shadow-lg shadow-emerald-900/30" type="submit">
+                <Button className="w-full h-10 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-md shadow-lg shadow-emerald-900/30" type="submit" disabled={isSubmitting}>
                   <LockIcon className="size-3.5 mr-2" />
                   {vaultInitialized ? "Unlock Vault" : "Initialize Vault"}
                 </Button>
@@ -972,10 +993,11 @@ function App() {
                         variant="ghost"
                         onClick={() => setShowSecretForm(false)}
                         className="h-8 text-xs text-zinc-400 hover:text-zinc-200"
+                        disabled={isSubmitting}
                       >
                         Cancel
                       </Button>
-                      <Button type="submit" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-500 text-white">
+                      <Button type="submit" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-500 text-white" disabled={isSubmitting}>
                         Create Group
                       </Button>
                     </CardFooter>
@@ -1116,7 +1138,7 @@ function App() {
                           </div>
 
                           <div className="flex justify-end pt-2">
-                            <Button type="submit" size="sm" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-500 text-white">
+                            <Button type="submit" size="sm" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-500 text-white" disabled={isSubmitting}>
                               Add Key
                             </Button>
                           </div>
@@ -1273,8 +1295,9 @@ function App() {
                     onChange={(e) => setWorkspaceFormName(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
                     placeholder="e.g. dev-env"
                     className="h-8 text-xs bg-background/50 border-zinc-800"
+                    disabled={isSubmitting}
                   />
-                  <Button type="submit" size="sm" className="h-8 px-2 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800">
+                  <Button type="submit" size="sm" className="h-8 px-2 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800" disabled={isSubmitting}>
                     <PlusIcon className="size-3.5" />
                   </Button>
                 </form>
@@ -1400,7 +1423,7 @@ function App() {
                               <Button
                                 type="submit"
                                 size="sm"
-                                disabled={!selectedWorkspace || !mappingApiKey}
+                                disabled={!selectedWorkspace || !mappingApiKey || isSubmitting}
                                 className="h-8 text-xs bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40"
                               >
                                 Bind Variable
