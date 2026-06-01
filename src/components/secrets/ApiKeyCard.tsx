@@ -1,5 +1,5 @@
 import { memo } from "react"
-import { CheckIcon, CodeIcon, CopyIcon, EyeIcon, Trash2Icon } from "lucide-react"
+import { CheckIcon, CodeIcon, CopyIcon, EyeIcon, PencilIcon, Trash2Icon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -10,6 +10,7 @@ interface ApiKeyCardProps {
   apiKey: ApiKey
   revealed: string | undefined
   onReveal: (key: ApiKey, workspaceId: string) => void
+  onEdit?: (key: ApiKey) => void
   onDelete: (key: ApiKey) => void
   workspaceIdForAudit: string
 }
@@ -25,6 +26,7 @@ function ApiKeyCardImpl({
   apiKey,
   revealed,
   onReveal,
+  onEdit,
   onDelete,
   workspaceIdForAudit,
 }: ApiKeyCardProps) {
@@ -79,6 +81,18 @@ function ApiKeyCardImpl({
           >
             <EyeIcon className="size-3.5" />
           </Button>
+
+          {onEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(apiKey)}
+              className="h-7 w-7 p-0 border-zinc-900 text-zinc-400 hover:text-zinc-200"
+              title="Edit Key"
+            >
+              <PencilIcon className="size-3.5" />
+            </Button>
+          )}
 
           <Button
             variant="outline"

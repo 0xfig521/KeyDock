@@ -58,6 +58,11 @@ export function SecretDetails({
     [apiKeys.reveal],
   )
 
+  const handleEdit = useCallback(
+    (key: ApiKey) => apiKeys.startEdit(key),
+    [apiKeys.startEdit],
+  )
+
   return (
     <div className="space-y-6">
       {/* Service header */}
@@ -103,8 +108,8 @@ export function SecretDetails({
       </div>
 
       {/* Metadata block */}
-      {(secret.baseUrl || secret.modelName) && (
-        <div className="grid grid-cols-2 gap-4 bg-zinc-950/40 border border-zinc-900 rounded-lg p-3 text-xs">
+      <div className="space-y-2 bg-zinc-950/40 border border-zinc-900 rounded-lg p-3 text-xs">
+        <div className="grid grid-cols-2 gap-4">
           {secret.baseUrl && (
             <div className="space-y-1">
               <span className="text-[10px] font-mono text-zinc-500 uppercase">
@@ -126,7 +131,22 @@ export function SecretDetails({
             </div>
           )}
         </div>
-      )}
+        {(secret.tags ?? []).length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-zinc-900/50">
+            <span className="text-[10px] font-mono text-zinc-500 uppercase">
+              Tags
+            </span>
+            {(secret.tags ?? []).map((tag) => (
+              <span
+                key={tag}
+                className="text-[10px] font-mono bg-zinc-800/60 text-zinc-400 px-1.5 py-0.5 rounded border border-zinc-800"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* API keys block */}
       <div className="space-y-3">
@@ -154,6 +174,7 @@ export function SecretDetails({
             onSubmit={handleSubmit}
             onCancel={apiKeys.closeForm}
             submitting={apiKeys.submitting}
+            editingKey={Boolean(apiKeys.editingId)}
           />
         )}
 
@@ -171,6 +192,7 @@ export function SecretDetails({
                 apiKey={key}
                 revealed={apiKeys.getRevealed(key.id)}
                 onReveal={handleReveal}
+                onEdit={handleEdit}
                 onDelete={handleDelete}
                 workspaceIdForAudit={selectedWorkspaceId}
               />

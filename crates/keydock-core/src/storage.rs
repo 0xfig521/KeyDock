@@ -368,6 +368,46 @@ impl AppStore {
         Ok(value)
     }
 
+    pub fn update_api_key(&self, id_or_path: &str, input: ApiKeyInput) -> Result<ApiKey> {
+        if let Some(env_name) = input.env_name.as_deref() {
+            validate_env_name(env_name)?;
+        }
+        let api_key = self.resolve_api_key(id_or_path)?;
+        let now = now();
+        if input.value.is_empty() {
+            self.conn.execute(
+                "UPDATE api_keys SET name = ?2, env_name = ?3, include_by_default = ?4, tags_json = ?5, description = ?6, updated_at = ?7 WHERE id = ?1",
+                params![
+                    api_key.id,
+                    input.name,
+                    input.env_name,
+                    bool_to_i64(input.include_by_default),
+                    serde_json::to_string(&input.tags)?,
+                    input.description,
+                    now,
+                ],
+            )?;
+        } else {
+            let encrypted_value = encrypt_secret(&self.master_key, &input.value)?;
+            self.conn.execute(
+                "UPDATE api_keys SET name = ?2, encrypted_value = ?3, env_name = ?4, include_by_default = ?5, tags_json = ?6, description = ?7, updated_at = ?8 WHERE id = ?1",
+                params![
+                    api_key.id,
+                    input.name,
+                    encrypted_value,
+                    input.env_name,
+                    bool_to_i64(input.include_by_default),
+                    serde_json::to_string(&input.tags)?,
+                    input.description,
+                    now,
+                ],
+            )?;
+        }
+        self.audit("edit_api_key", Some(&api_key.id), None, None)?;
+        self.get_api_key_by_id(&api_key.id)?
+            .ok_or_else(|| anyhow!("api key not found"))
+    }
+
     pub fn delete_api_key(&self, id_or_path: &str) -> Result<()> {
         let api_key = self.resolve_api_key(id_or_path)?;
         self.conn

@@ -48,6 +48,9 @@ export const listApiKeys = (secret: string | null) =>
 export const createApiKey = (secret: string, input: ApiKeyInput) =>
   invoke<ApiKey>("create_api_key", { secret, input })
 
+export const updateApiKey = (apiKey: string, input: ApiKeyInput) =>
+  invoke<ApiKey>("update_api_key", { apiKey, input })
+
 export const deleteApiKey = (apiKey: string) =>
   invoke<void>("delete_api_key", { apiKey })
 

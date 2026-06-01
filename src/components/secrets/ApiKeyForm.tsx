@@ -11,6 +11,7 @@ interface ApiKeyFormProps {
   onSubmit: (event: FormEvent) => void
   onCancel: () => void
   submitting: boolean
+  editingKey?: boolean
 }
 
 /**
@@ -24,12 +25,15 @@ export function ApiKeyForm({
   onSubmit,
   onCancel,
   submitting,
+  editingKey,
 }: ApiKeyFormProps) {
   return (
     <Card className="bg-zinc-900/40 border-zinc-800 p-4 animate-in fade-in slide-in-from-top-3">
       <form onSubmit={onSubmit} className="space-y-3.5 text-xs">
         <div className="flex items-center justify-between pb-2 border-b border-zinc-900">
-          <span className="font-semibold text-zinc-300">Add API Key entry</span>
+          <span className="font-semibold text-zinc-300">
+            {editingKey ? "Edit API Key entry" : "Add API Key entry"}
+          </span>
           <Button
             type="button"
             variant="ghost"
@@ -78,8 +82,8 @@ export function ApiKeyForm({
             type="password"
             value={form.value}
             onChange={(e) => onChange({ ...form, value: e.target.value })}
-            placeholder="sk-..."
-            required
+            placeholder={editingKey ? "Leave blank to keep current value" : "sk-..."}
+            required={!editingKey}
             className="h-8 text-xs bg-zinc-950/60 font-mono"
           />
         </div>
@@ -109,7 +113,7 @@ export function ApiKeyForm({
             className="h-8 text-xs bg-emerald-600 hover:bg-emerald-500 text-white"
             disabled={submitting}
           >
-            Add Key
+            {editingKey ? "Save Changes" : "Add Key"}
           </Button>
         </div>
       </form>

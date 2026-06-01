@@ -5,6 +5,7 @@ import {
   deleteApiKey as deleteApiKeyApi,
   listApiKeys,
   revealApiKey as revealApiKeyApi,
+  updateApiKey as updateApiKeyApi,
 } from "@/lib/tauri"
 import { emptyApiKeyForm } from "@/constants"
 import type { ApiKey, ApiKeyForm } from "@/types"
@@ -17,7 +18,9 @@ export interface UseApiKeys {
   form: ApiKeyForm
   setForm: (form: ApiKeyForm) => void
   submitting: boolean
+  editingId: string
   openForm: (prefill?: Partial<ApiKeyForm>) => void
+  startEdit: (key: ApiKey) => void
   closeForm: () => void
   save: (secretId: string) => Promise<ApiKey | null>
   remove: (id: string, name: string) => Promise<void>
@@ -32,6 +35,7 @@ export function useApiKeys(): UseApiKeys {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<ApiKeyForm>(emptyApiKeyForm)
+  const [editingId, setEditingId] = useState("")
   const [submitting, setSubmitting] = useState(false)
   // Plaintext lives in a ref so it never appears in React DevTools state
   // snapshots. revealedVersion is a counter that bumps on every mutation
@@ -51,12 +55,26 @@ export function useApiKeys(): UseApiKeys {
 
   const openForm = useCallback((prefill?: Partial<ApiKeyForm>) => {
     setForm({ ...emptyApiKeyForm, ...prefill })
+    setEditingId("")
+    setShowForm(true)
+  }, [])
+
+  const startEdit = useCallback((key: ApiKey) => {
+    setForm({
+      name: key.name,
+      value: "",
+      envName: key.envName ?? "",
+      includeByDefault: key.includeByDefault,
+      tags: (key.tags ?? []).join(", "),
+    })
+    setEditingId(key.id)
     setShowForm(true)
   }, [])
 
   const closeForm = useCallback(() => {
     setShowForm(false)
     setForm(emptyApiKeyForm)
+    setEditingId("")
   }, [])
 
   const save = useCallback(
@@ -69,7 +87,8 @@ export function useApiKeys(): UseApiKeys {
       const dup = apiKeys.some(
         (k) =>
           k.secretId === secretId &&
-          k.name.toLowerCase() === trimmedName.toLowerCase(),
+          k.name.toLowerCase() === trimmedName.toLowerCase() &&
+          k.id !== editingId,
       )
       if (dup) {
         show(
@@ -80,14 +99,24 @@ export function useApiKeys(): UseApiKeys {
       }
       try {
         setSubmitting(true)
-        const created = await createApiKeyApi(secretId, {
+        const payload = {
           name: trimmedName,
           value: form.value,
           envName: form.envName.trim() || null,
           includeByDefault: form.includeByDefault,
           tags: [],
           description: null,
-        })
+        }
+        if (editingId) {
+          const updated = await updateApiKeyApi(editingId, payload)
+          show(`Updated API Key: ${updated.name}`, "success")
+          setShowForm(false)
+          setForm(emptyApiKeyForm)
+          setEditingId("")
+          await refresh()
+          return updated
+        }
+        const created = await createApiKeyApi(secretId, payload)
         show(`Added API Key: ${created.name}`, "success")
         setShowForm(false)
         setForm(emptyApiKeyForm)
@@ -100,7 +129,7 @@ export function useApiKeys(): UseApiKeys {
         setSubmitting(false)
       }
     },
-    [apiKeys, form, refresh, show],
+    [apiKeys, editingId, form, refresh, show],
   )
 
   const reveal = useCallback(
@@ -182,7 +211,9 @@ export function useApiKeys(): UseApiKeys {
     form,
     setForm,
     submitting,
+    editingId,
     openForm,
+    startEdit,
     closeForm,
     save,
     remove,

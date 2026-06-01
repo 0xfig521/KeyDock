@@ -119,6 +119,15 @@ fn create_api_key(
 }
 
 #[tauri::command]
+fn update_api_key(
+    state: State<'_, AppState>,
+    api_key: String,
+    input: ApiKeyInput,
+) -> CommandResult<ApiKey> {
+    Ok(state.store()?.update_api_key(&api_key, input)?)
+}
+
+#[tauri::command]
 fn delete_api_key(state: State<'_, AppState>, api_key: String) -> CommandResult<()> {
     Ok(state.store()?.delete_api_key(&api_key)?)
 }
@@ -261,6 +270,7 @@ pub fn run() {
             delete_secret,
             list_api_keys,
             create_api_key,
+            update_api_key,
             delete_api_key,
             reveal_api_key,
             list_workspaces,
