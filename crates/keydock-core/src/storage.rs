@@ -234,10 +234,14 @@ impl AppStore {
             sql.push_str(" LIMIT ? OFFSET ?");
         }
         let mut stmt = self.conn.prepare(&sql)?;
-        let rows = stmt.query(rusqlite::params_from_iter([
-            limit.map(|n| n as i64),
-            offset.map(|n| n as i64),
-        ]))?;
+        let rows = if limit.is_some() || offset.is_some() {
+            stmt.query(rusqlite::params_from_iter([
+                limit.map(|n| n as i64),
+                offset.map(|n| n as i64),
+            ]))?
+        } else {
+            stmt.query([])?
+        };
         let mapped = rows
             .mapped(row_to_secret)
             .collect::<rusqlite::Result<Vec<_>>>()?;
