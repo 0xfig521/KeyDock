@@ -24,9 +24,10 @@ export function AuditTab({ logs, onRefresh }: AuditTabProps) {
             Security Audit
           </h1>
           <p className="text-xs text-zinc-400 max-w-xl leading-relaxed">
-            Read-only trail of sensitive actions, including reveals, copies,
-            workspace mappings, and exports. Entries never include secret
-            values.
+            Read-only trail of every operation on secrets, API keys, and
+            workspace mappings — create, edit, delete, reveal, copy, map,
+            unmap, and export. Each entry records the action, target,
+            workspace, and timestamp; never the secret value itself.
           </p>
         </div>
         <Button
