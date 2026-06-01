@@ -112,7 +112,6 @@ export interface SecretForm {
   modelName: string
   tags: string
   description: string
-  dashboardUrl: string
 }
 
 export interface ApiKeyForm {

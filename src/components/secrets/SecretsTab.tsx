@@ -62,7 +62,6 @@ export function SecretsTab({
         modelName: preset.modelName,
         tags: preset.tags,
         description: preset.description ?? "",
-        dashboardUrl: "",
       })
       apiKeys.setForm({
         name: preset.apiKey.name,

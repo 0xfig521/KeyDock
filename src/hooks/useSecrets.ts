@@ -71,7 +71,6 @@ export function useSecrets(): UseSecrets {
       modelName: secret.modelName ?? "",
       tags: (secret.tags ?? []).join(", "),
       description: secret.description ?? "",
-      dashboardUrl: secret.dashboardUrl ?? "",
     })
     setShowForm(true)
   }, [])
@@ -90,11 +89,10 @@ export function useSecrets(): UseSecrets {
       modelName: f.modelName.trim() || null,
       tags: splitTags(f.tags),
       description: f.description.trim() || null,
-      // Note: dashboardUrl/docsUrl/loginUrl/notes are accepted by the Rust struct
-      // but the existing UI form only collects dashboardUrl. We still pass it
-      // through so the round-trip preserves what the user typed, even though
-      // the persisted dashboard_url column is currently unused by the desktop UI.
-      dashboardUrl: f.dashboardUrl.trim() || null,
+      // Reference fields are not collected by the desktop form. The
+      // Rust struct still accepts them so the CLI can set them, but
+      // every round-trip from the desktop clears them.
+      dashboardUrl: null,
       docsUrl: null,
       loginUrl: null,
       notes: null,

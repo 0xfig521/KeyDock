@@ -9,7 +9,6 @@ export const emptySecretForm = {
   modelName: "",
   tags: "",
   description: "",
-  dashboardUrl: "",
 }
 
 export const emptyApiKeyForm = {
