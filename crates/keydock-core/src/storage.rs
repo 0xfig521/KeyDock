@@ -403,16 +403,33 @@ impl AppStore {
             .or(api_key.env_name.as_deref())
             .ok_or_else(|| anyhow!("api key has no default env name; provide one explicitly"))?;
         validate_env_name(env_name)?;
-        let id = Uuid::new_v4().to_string();
         let now = now();
-        let sort_order = self.next_workspace_sort_order(&workspace.id)?;
-        self.conn.execute(
-            "INSERT INTO workspace_variables (id, workspace_id, secret_id, api_key_id, env_name, enabled, required, sort_order, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, 1, 0, ?6, ?7, ?7)
-             ON CONFLICT(workspace_id, env_name) DO UPDATE SET secret_id = excluded.secret_id, api_key_id = excluded.api_key_id,
-             enabled = 1, updated_at = excluded.updated_at",
-            params![id, workspace.id, api_key.secret_id, api_key.id, env_name, sort_order, now],
-        )?;
+        // Explicit SELECT-then-INSERT-or-UPDATE: UPSERT silently discards
+        // the new UUID and hides insert-vs-update from the reader.
+        let existing: Option<String> = self
+            .conn
+            .query_row(
+                "SELECT id FROM workspace_variables WHERE workspace_id = ?1 AND env_name = ?2",
+                params![workspace.id, env_name],
+                |row| row.get(0),
+            )
+            .optional()?;
+        if let Some(existing_id) = existing {
+            self.conn.execute(
+                "UPDATE workspace_variables
+                 SET secret_id = ?1, api_key_id = ?2, enabled = 1, updated_at = ?3
+                 WHERE id = ?4",
+                params![api_key.secret_id, api_key.id, now, existing_id],
+            )?;
+        } else {
+            let id = Uuid::new_v4().to_string();
+            let sort_order = self.next_workspace_sort_order(&workspace.id)?;
+            self.conn.execute(
+                "INSERT INTO workspace_variables (id, workspace_id, secret_id, api_key_id, env_name, enabled, required, sort_order, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, 1, 0, ?6, ?7, ?7)",
+                params![id, workspace.id, api_key.secret_id, api_key.id, env_name, sort_order, now],
+            )?;
+        }
         self.audit(
             "map_workspace_variable",
             Some(&api_key.id),
