@@ -105,21 +105,20 @@ export function useApiKeys(): UseApiKeys {
 
   const reveal = useCallback(
     async (apiKey: ApiKey) => {
+      // Anchor the 30s auto-hide to the first reveal so a flurry of
+      // 👁 clicks cannot push the deadline forward or burn extra
+      // backend decrypts.
+      if (timersRef.current.has(apiKey.id)) return
       try {
         const value = await revealApiKeyApi(apiKey.id)
         revealedRef.current[apiKey.id] = value
         setRevealedVersion((v) => v + 1)
         show(`Revealed: ${apiKey.name}`, "info")
 
-        // Reset any prior timer for this key.
-        const prior = timersRef.current.get(apiKey.id)
-        if (prior !== undefined) {
-          window.clearTimeout(prior)
-        }
         const handle = window.setTimeout(() => {
           delete revealedRef.current[apiKey.id]
-          setRevealedVersion((v) => v + 1)
           timersRef.current.delete(apiKey.id)
+          setRevealedVersion((v) => v + 1)
         }, REVEAL_AUTO_HIDE_MS)
         timersRef.current.set(apiKey.id, handle)
       } catch (e) {
