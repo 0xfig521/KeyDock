@@ -1,4 +1,5 @@
 import type { FormEvent } from "react"
+import { XIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -32,10 +33,12 @@ export function ApiKeyForm({
           <Button
             type="button"
             variant="ghost"
+            size="icon"
             onClick={onCancel}
-            className="h-5 p-1 text-[10px] hover:bg-zinc-800 text-zinc-400"
+            aria-label="Cancel"
+            className="h-5 w-5 p-0 hover:bg-zinc-800 text-zinc-400"
           >
-            Cancel
+            <XIcon className="size-3" />
           </Button>
         </div>
 
