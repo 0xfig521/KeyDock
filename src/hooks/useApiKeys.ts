@@ -105,10 +105,13 @@ export function useApiKeys(): UseApiKeys {
 
   const reveal = useCallback(
     async (apiKey: ApiKey, workspaceId: string | null = null) => {
-      // Anchor the 30s auto-hide to the first reveal so a flurry of
-      // 👁 clicks cannot push the deadline forward or burn extra
-      // backend decrypts.
-      if (timersRef.current.has(apiKey.id)) return
+      if (timersRef.current.has(apiKey.id)) {
+        window.clearTimeout(timersRef.current.get(apiKey.id))
+        timersRef.current.delete(apiKey.id)
+        delete revealedRef.current[apiKey.id]
+        setRevealedVersion((v) => v + 1)
+        return
+      }
       try {
         const value = await revealApiKeyApi(apiKey.id, workspaceId)
         revealedRef.current[apiKey.id] = value
