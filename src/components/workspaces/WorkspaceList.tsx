@@ -1,3 +1,4 @@
+import type { RefObject } from "react"
 import { PlusIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,6 +14,7 @@ interface WorkspaceListProps {
   onSelect: (id: string) => void
   onFormNameChange: (name: string) => void
   onCreate: (event: React.FormEvent) => void
+  createInputRef?: RefObject<HTMLInputElement>
 }
 
 export function WorkspaceList({
@@ -23,6 +25,7 @@ export function WorkspaceList({
   onSelect,
   onFormNameChange,
   onCreate,
+  createInputRef,
 }: WorkspaceListProps) {
   return (
     <div className="w-[280px] border-r border-border flex flex-col sticky top-0 h-screen bg-card/10 shrink-0">
@@ -32,6 +35,7 @@ export function WorkspaceList({
         </h2>
         <form onSubmit={onCreate} className="flex gap-2">
           <Input
+            ref={createInputRef}
             value={formName}
             onChange={(e) => onFormNameChange(e.target.value)}
             placeholder="e.g. dev-env"

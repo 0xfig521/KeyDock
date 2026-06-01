@@ -1,6 +1,7 @@
-import { useEffect } from "react"
+import { useCallback, useEffect, useRef } from "react"
 import type { FormEvent } from "react"
-import { LayersIcon } from "lucide-react"
+import { LayersIcon, PlusIcon } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import type { UseApiKeys } from "@/hooks/useApiKeys"
 import { useVariables } from "@/hooks/useVariables"
 import type { UseWorkspaces } from "@/hooks/useWorkspaces"
@@ -25,6 +26,10 @@ export function WorkspacesTab({
   onSelectWorkspace,
 }: WorkspacesTabProps) {
   const variables = useVariables(selectedWorkspaceId, vaultReady)
+  const createInputRef = useRef<HTMLInputElement>(null)
+  const focusCreateInput = useCallback(() => {
+    createInputRef.current?.focus()
+  }, [])
 
   useEffect(() => {
     if (!vaultReady) return
@@ -60,6 +65,7 @@ export function WorkspacesTab({
         onSelect={onSelectWorkspace}
         onFormNameChange={workspaces.setFormName}
         onCreate={handleCreate}
+        createInputRef={createInputRef}
       />
 
       <div className="flex-grow p-8 overflow-y-auto max-w-5xl">
@@ -71,26 +77,38 @@ export function WorkspacesTab({
             variables={variables}
           />
         ) : (
-          <WorkspacesTabEmpty />
+          <WorkspacesTabEmpty onCreate={focusCreateInput} />
         )}
       </div>
     </div>
   )
 }
 
-function WorkspacesTabEmpty() {
+interface WorkspacesTabEmptyProps {
+  onCreate: () => void
+}
+
+function WorkspacesTabEmpty({ onCreate }: WorkspacesTabEmptyProps) {
   return (
-    <div className="space-y-4 py-8 text-center max-w-sm mx-auto">
+    <div className="space-y-5 py-10 text-center max-w-sm mx-auto">
       <LayersIcon className="size-10 text-zinc-700 mx-auto" />
       <div className="space-y-1">
         <h3 className="text-sm font-semibold text-zinc-300">
           Workspace Environment Composer
         </h3>
         <p className="text-xs text-zinc-500 leading-relaxed">
-          Select or create a workspace zone in the sidebar panel to start
-          mapping variables.
+          Create a workspace to map your Secrets into environment variables for
+          launch-time injection.
         </p>
       </div>
+      <Button
+        onClick={onCreate}
+        size="sm"
+        className="bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800"
+      >
+        <PlusIcon className="size-3.5 mr-1.5" />
+        Create your first workspace
+      </Button>
     </div>
   )
 }
