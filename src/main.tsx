@@ -620,19 +620,19 @@ function App() {
           </div>
 
           <Card className="w-full border-border bg-card/60 backdrop-blur-md shadow-2xl shadow-emerald-950/20">
-            <CardHeader className="text-center pb-2">
-              <CardTitle className="text-lg font-medium tracking-tight">
+            <CardHeader className="text-center pb-4 pt-6 px-6 gap-2.5">
+              <CardTitle className="text-lg font-semibold tracking-tight">
                 {vaultInitialized ? "Unlock Insurance Vault" : "Create Master Vault"}
               </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
+              <CardDescription className="text-xs text-muted-foreground leading-relaxed px-2">
                 {vaultInitialized
                   ? "Enter master password to unlock your secure key database."
                   : "Setup a strong master password to derive secure encryption keys."}
               </CardDescription>
             </CardHeader>
             <form onSubmit={submitMasterPassword}>
-              <CardContent className="space-y-3 pt-2">
-                <div className="space-y-1">
+              <CardContent className="space-y-4 px-6 py-2">
+                <div className="space-y-2">
                   <Input
                     type="password"
                     value={masterPassword}
@@ -640,11 +640,11 @@ function App() {
                     placeholder="Enter password..."
                     autoFocus
                     required
-                    className="h-10 text-center tracking-widest text-sm bg-background/50"
+                    className="h-10 text-center tracking-widest text-sm bg-background/50 border-zinc-800"
                   />
                 </div>
               </CardContent>
-              <CardFooter className="pb-6">
+              <CardFooter className="p-6 pt-4 border-t border-zinc-900 bg-muted/20">
                 <Button className="w-full h-10 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-md shadow-lg shadow-emerald-900/30" type="submit">
                   <LockIcon className="size-3.5 mr-2" />
                   {vaultInitialized ? "Unlock Vault" : "Initialize Vault"}
@@ -868,15 +868,15 @@ function App() {
             <div className="flex-grow p-8 overflow-y-auto max-w-4xl">
               {showSecretForm ? (
                 // Add / Edit Secret Group Form
-                <Card className="bg-zinc-900/40 border-zinc-800 max-w-xl shadow-lg">
-                  <CardHeader className="pb-3 border-b border-zinc-900">
+                <Card className="bg-zinc-900/40 border-zinc-800 max-w-xl shadow-lg p-0 overflow-hidden">
+                  <CardHeader className="p-6 pb-4 border-b border-zinc-900 gap-2">
                     <CardTitle className="text-sm font-semibold">Register Service Group</CardTitle>
                     <CardDescription className="text-xs">
                       Group endpoints, URLs, default models, and map multiple API credentials under a service.
                     </CardDescription>
                   </CardHeader>
                   <form onSubmit={handleCreateSecret}>
-                    <CardContent className="space-y-4 pt-4 text-xs">
+                    <CardContent className="space-y-4 p-6 text-xs">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                           <label className="text-[10px] uppercase font-mono text-zinc-500">Service Name *</label>
@@ -951,7 +951,7 @@ function App() {
                         />
                       </div>
                     </CardContent>
-                    <CardFooter className="flex justify-end gap-2 border-t border-zinc-900 pt-4">
+                    <CardFooter className="p-6 py-4 flex justify-end gap-2 border-t border-zinc-900 bg-muted/10">
                       <Button
                         type="button"
                         variant="ghost"
