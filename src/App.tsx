@@ -37,6 +37,20 @@ export function App() {
     setSelectedWorkspaceId(workspaces.workspaces[0].id)
   }, [vault.ready, workspaces.workspaces, selectedWorkspaceId])
 
+  useEffect(() => {
+    if (!vault.ready) return
+    void secrets.refresh()
+    void apiKeys.refresh()
+    void workspaces.refresh()
+    void audit.refresh()
+  }, [
+    vault.ready,
+    secrets.refresh,
+    apiKeys.refresh,
+    workspaces.refresh,
+    audit.refresh,
+  ])
+
   async function handleLock() {
     try {
       await vault.lock()

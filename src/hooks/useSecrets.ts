@@ -9,6 +9,10 @@ import {
 import { emptySecretForm, splitTags } from "@/constants"
 import type { PresetDef, Secret, SecretCategory, SecretForm, SecretInput } from "@/types"
 
+function isSecretNameConflict(message: string): boolean {
+  return message.includes("UNIQUE constraint failed: secrets.name")
+}
+
 export interface UseSecrets {
   secrets: Secret[]
   filtered: Secret[]
@@ -140,7 +144,19 @@ export function useSecrets(): UseSecrets {
       await refresh()
       return saved
     } catch (e) {
-      show(extractMessage(e), "error")
+      const message = extractMessage(e)
+      if (isSecretNameConflict(message)) {
+        const name = form.name.trim()
+        show(
+          editingId
+            ? `Another service group with the name "${name}" already exists.`
+            : `A service group with the name "${name}" already exists.`,
+          "error",
+        )
+        void refresh()
+      } else {
+        show(message, "error")
+      }
       return null
       } finally {
         setSubmitting(false)
@@ -181,7 +197,13 @@ export function useSecrets(): UseSecrets {
         await refresh()
         return created
       } catch (e) {
-        show(extractMessage(e), "error")
+        const message = extractMessage(e)
+        if (isSecretNameConflict(message)) {
+          show(`A service named "${preset.name}" already exists.`, "error")
+          void refresh()
+        } else {
+          show(message, "error")
+        }
         return null
       } finally {
         setSubmitting(false)
