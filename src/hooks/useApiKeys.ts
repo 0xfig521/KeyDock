@@ -33,7 +33,11 @@ export function useApiKeys(): UseApiKeys {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<ApiKeyForm>(emptyApiKeyForm)
   const [submitting, setSubmitting] = useState(false)
-  const [revealed, setRevealed] = useState<Record<string, string>>({})
+  // Plaintext lives in a ref so it never appears in React DevTools state
+  // snapshots. revealedVersion is a counter that bumps on every mutation
+  // so consumers re-render to read the new value.
+  const revealedRef = useRef<Record<string, string>>({})
+  const [revealedVersion, setRevealedVersion] = useState(0)
   const timersRef = useRef<Map<string, number>>(new Map())
 
   const refresh = useCallback(async () => {
@@ -103,7 +107,8 @@ export function useApiKeys(): UseApiKeys {
     async (apiKey: ApiKey) => {
       try {
         const value = await revealApiKeyApi(apiKey.id)
-        setRevealed((prev) => ({ ...prev, [apiKey.id]: value }))
+        revealedRef.current[apiKey.id] = value
+        setRevealedVersion((v) => v + 1)
         show(`Revealed: ${apiKey.name}`, "info")
 
         // Reset any prior timer for this key.
@@ -112,12 +117,8 @@ export function useApiKeys(): UseApiKeys {
           window.clearTimeout(prior)
         }
         const handle = window.setTimeout(() => {
-          setRevealed((prev) => {
-            if (!(apiKey.id in prev)) return prev
-            const next = { ...prev }
-            delete next[apiKey.id]
-            return next
-          })
+          delete revealedRef.current[apiKey.id]
+          setRevealedVersion((v) => v + 1)
           timersRef.current.delete(apiKey.id)
         }, REVEAL_AUTO_HIDE_MS)
         timersRef.current.set(apiKey.id, handle)
@@ -143,15 +144,20 @@ export function useApiKeys(): UseApiKeys {
   )
 
   const getRevealed = useCallback(
-    (id: string) => revealed[id],
-    [revealed],
+    (id: string) => revealedRef.current[id],
+    // revealedVersion is read inside the closure indirectly via the ref,
+    // but listing it as a dep ensures a new function identity after each
+    // mutation so React.memo'd consumers re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [revealedVersion],
   )
 
   // Wipe all in-memory plaintext — called by App on lock.
   const clearRevealed = useCallback(() => {
     timersRef.current.forEach((handle) => window.clearTimeout(handle))
     timersRef.current.clear()
-    setRevealed({})
+    revealedRef.current = {}
+    setRevealedVersion((v) => v + 1)
   }, [])
 
   // Cleanup all reveal timers on unmount to avoid setState on unmounted.
