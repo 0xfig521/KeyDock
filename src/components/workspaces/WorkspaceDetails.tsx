@@ -98,6 +98,7 @@ export function WorkspaceDetails({
           <EnvExport
             text={variables.exportedEnv}
             onGenerate={variables.generateEnv}
+            onClear={variables.clearExport}
             onCopy={() =>
               copy({
                 text: variables.exportedEnv,
