@@ -47,6 +47,7 @@ fn get_vault_status(state: State<'_, AppState>) -> CommandResult<VaultStatus> {
 #[tauri::command]
 fn setup_master_password(state: State<'_, AppState>, password: String) -> CommandResult<()> {
     let dek = initialize_vault(&state.db_path, &password)?;
+    AppStore::open(state.db_path.clone(), dek.clone())?;
     *state
         .dek
         .lock()
@@ -57,6 +58,7 @@ fn setup_master_password(state: State<'_, AppState>, password: String) -> Comman
 #[tauri::command]
 fn unlock_master_password(state: State<'_, AppState>, password: String) -> CommandResult<()> {
     let dek = unlock_vault(&state.db_path, &password)?;
+    AppStore::open(state.db_path.clone(), dek.clone())?;
     *state
         .dek
         .lock()
