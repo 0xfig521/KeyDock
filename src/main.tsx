@@ -23,6 +23,7 @@ import {
   SparklesIcon,
   ArrowRightIcon,
   AlertCircleIcon,
+  SettingsIcon,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { invoke } from "@tauri-apps/api/core"
@@ -241,6 +242,7 @@ function App() {
   // Notifications
   const [toast, setToast] = useState<ToastMessage | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [editingSecretId, setEditingSecretId] = useState("")
 
   // Trigger floating toast
   const showToast = (message: string, type: "info" | "success" | "error" = "info") => {
@@ -361,34 +363,60 @@ function App() {
     }
   }
 
-  async function handleCreateSecret(event: FormEvent) {
+  async function handleSaveSecret(event: FormEvent) {
     event.preventDefault()
     if (isSubmitting) return
-    const exists = secrets.some((s) => s.name.toLowerCase() === secretForm.name.toLowerCase())
-    if (exists) {
-      showToast(`A service group with the name "${secretForm.name}" already exists.`, "error")
-      return
+
+    // If creating, check for duplicate name
+    if (!editingSecretId) {
+      const exists = secrets.some((s) => s.name.toLowerCase() === secretForm.name.toLowerCase())
+      if (exists) {
+        showToast(`A service group with the name "${secretForm.name}" already exists.`, "error")
+        return
+      }
+    } else {
+      // If editing, check for duplicates excluding itself
+      const exists = secrets.some(
+        (s) => s.id !== editingSecretId && s.name.toLowerCase() === secretForm.name.toLowerCase())
+      if (exists) {
+        showToast(`Another service group with the name "${secretForm.name}" already exists.`, "error")
+        return
+      }
     }
+
     try {
       setIsSubmitting(true)
-      const secret = await invoke<Secret>("create_secret", {
-        input: {
-          name: secretForm.name,
-          category: secretForm.category,
-          baseUrl: secretForm.baseUrl || null,
-          modelName: secretForm.modelName || null,
-          tags: splitTags(secretForm.tags),
-          description: secretForm.description || null,
-          dashboardUrl: secretForm.dashboardUrl || null,
-          docsUrl: null,
-          loginUrl: null,
-          notes: null,
-        },
-      })
-      setSecretForm(emptySecretForm)
-      setShowSecretForm(false)
-      showToast(`Created service group: ${secret.name}`, "success")
-      await refresh(secret.id)
+      const input = {
+        name: secretForm.name,
+        category: secretForm.category,
+        baseUrl: secretForm.baseUrl || null,
+        modelName: secretForm.modelName || null,
+        tags: splitTags(secretForm.tags),
+        description: secretForm.description || null,
+        dashboardUrl: secretForm.dashboardUrl || null,
+        docsUrl: null,
+        loginUrl: null,
+        notes: null,
+      }
+
+      if (editingSecretId) {
+        const secret = await invoke<Secret>("update_secret", {
+          id: editingSecretId,
+          input,
+        })
+        showToast(`Updated service group: ${secret.name}`, "success")
+        setEditingSecretId("")
+        setShowSecretForm(false)
+        await refresh(secret.id)
+      } else {
+        const secret = await invoke<Secret>("create_secret", {
+          input,
+        })
+        setSecretForm(emptySecretForm)
+        setShowSecretForm(false)
+        showToast(`Created service group: ${secret.name}`, "success")
+        await refresh(secret.id)
+      }
     } catch (e) {
       showError(e)
     } finally {
@@ -866,6 +894,8 @@ function App() {
                           onClick={() => {
                             setSelectedSecret(secret.id)
                             setShowApiKeyForm(false)
+                            setShowSecretForm(false)
+                            setEditingSecretId("")
                           }}
                           className={cn(
                             "w-full text-left p-3 rounded-md transition-all border text-xs relative",
@@ -906,12 +936,16 @@ function App() {
                 // Add / Edit Secret Group Form
                 <Card className="bg-zinc-900/40 border-zinc-800 max-w-xl shadow-lg p-0 overflow-hidden">
                   <CardHeader className="p-6 pb-4 border-b border-zinc-900 gap-2">
-                    <CardTitle className="text-sm font-semibold">Register Service Group</CardTitle>
+                    <CardTitle className="text-sm font-semibold">
+                      {editingSecretId ? "Edit Service Group" : "Register Service Group"}
+                    </CardTitle>
                     <CardDescription className="text-xs">
-                      Group endpoints, URLs, default models, and map multiple API credentials under a service.
+                      {editingSecretId
+                        ? "Modify endpoints, category, default model name, tags, and description."
+                        : "Group endpoints, URLs, default models, and map multiple API credentials under a service."}
                     </CardDescription>
                   </CardHeader>
-                  <form onSubmit={handleCreateSecret}>
+                  <form onSubmit={handleSaveSecret}>
                     <CardContent className="space-y-4 p-6 text-xs">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
@@ -998,7 +1032,7 @@ function App() {
                         Cancel
                       </Button>
                       <Button type="submit" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-500 text-white" disabled={isSubmitting}>
-                        Create Group
+                        {editingSecretId ? "Save Changes" : "Create Group"}
                       </Button>
                     </CardFooter>
                   </form>
@@ -1020,15 +1054,39 @@ function App() {
                       </p>
                     </div>
 
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteSecret(selectedSecretModel.id, selectedSecretModel.name)}
-                      className="h-7 text-xs border-zinc-900 text-zinc-500 hover:text-rose-400 hover:bg-rose-950/20"
-                    >
-                      <Trash2Icon className="size-3 mr-1.5" />
-                      Delete Group
-                    </Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingSecretId(selectedSecretModel.id)
+                          setSecretForm({
+                            name: selectedSecretModel.name,
+                            category: selectedSecretModel.category,
+                            baseUrl: selectedSecretModel.baseUrl || "",
+                            modelName: selectedSecretModel.modelName || "",
+                            tags: selectedSecretModel.tags.join(", "),
+                            description: selectedSecretModel.description || "",
+                            dashboardUrl: selectedSecretModel.dashboardUrl || "",
+                          })
+                          setShowSecretForm(true)
+                        }}
+                        className="h-7 text-xs border-zinc-850 text-zinc-400 hover:text-zinc-200"
+                      >
+                        <SettingsIcon className="size-3 mr-1.5" />
+                        Edit Group
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteSecret(selectedSecretModel.id, selectedSecretModel.name)}
+                        className="h-7 text-xs border-zinc-900 text-zinc-500 hover:text-rose-400 hover:bg-rose-950/20"
+                      >
+                        <Trash2Icon className="size-3 mr-1.5" />
+                        Delete Group
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Metadata fields (only if exists) */}
