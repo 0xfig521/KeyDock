@@ -358,6 +358,11 @@ function App() {
 
   async function handleCreateSecret(event: FormEvent) {
     event.preventDefault()
+    const exists = secrets.some((s) => s.name.toLowerCase() === secretForm.name.toLowerCase())
+    if (exists) {
+      showToast(`A service group with the name "${secretForm.name}" already exists.`, "error")
+      return
+    }
     try {
       const secret = await invoke<Secret>("create_secret", {
         input: {
@@ -397,6 +402,11 @@ function App() {
   async function handleCreateApiKey(event: FormEvent) {
     event.preventDefault()
     if (!selectedSecret) return
+    const exists = selectedApiKeys.some((k) => k.name.toLowerCase() === apiKeyForm.name.toLowerCase())
+    if (exists) {
+      showToast(`An API key with the name "${apiKeyForm.name}" already exists in this service.`, "error")
+      return
+    }
     try {
       const apiKey = await invoke<ApiKey>("create_api_key", {
         secret: selectedSecret,
@@ -451,6 +461,11 @@ function App() {
   async function handleCreateWorkspace(event: FormEvent) {
     event.preventDefault()
     if (!workspaceFormName.trim()) return
+    const exists = workspaces.some((w) => w.name.toLowerCase() === workspaceFormName.toLowerCase())
+    if (exists) {
+      showToast(`A workspace with the name "${workspaceFormName}" already exists.`, "error")
+      return
+    }
     try {
       const ws = await invoke<Workspace>("create_workspace", {
         name: workspaceFormName,
