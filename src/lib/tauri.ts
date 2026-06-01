@@ -28,7 +28,8 @@ export const lockVault = () => invoke<void>("lock_vault")
 
 // --- Secrets ---
 
-export const listSecrets = () => invoke<Secret[]>("list_secrets")
+export const listSecrets = (limit?: number, offset?: number) =>
+  invoke<Secret[]>("list_secrets", { limit, offset })
 
 export const createSecret = (input: SecretInput) =>
   invoke<Secret>("create_secret", { input })

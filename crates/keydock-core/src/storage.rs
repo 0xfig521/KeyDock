@@ -109,6 +109,8 @@ impl AppStore {
                 env_name TEXT,
                 created_at TEXT NOT NULL
             );
+            CREATE INDEX IF NOT EXISTS idx_secrets_name_nocase
+                ON secrets(name COLLATE NOCASE);
             ",
         )?;
         Ok(())
@@ -195,14 +197,25 @@ impl AppStore {
             .ok_or_else(|| anyhow!("secret not found"))
     }
 
-    pub fn list_secrets(&self) -> Result<Vec<Secret>> {
-        let mut stmt = self.conn.prepare(
+    pub fn list_secrets(&self, limit: Option<usize>, offset: Option<usize>) -> Result<Vec<Secret>> {
+        // idx_secrets_name_nocase is used by the ORDER BY so the sort
+        // does not fall back to a temp B-tree once the table grows.
+        let mut sql = String::from(
             "SELECT id, name, category, base_url, model_name, tags_json, description, dashboard_url, docs_url, login_url, notes, created_at, updated_at
              FROM secrets ORDER BY name COLLATE NOCASE",
-        )?;
-        let rows = stmt.query_map([], row_to_secret)?;
-        rows.collect::<rusqlite::Result<Vec<_>>>()
-            .map_err(Into::into)
+        );
+        if limit.is_some() || offset.is_some() {
+            sql.push_str(" LIMIT ? OFFSET ?");
+        }
+        let mut stmt = self.conn.prepare(&sql)?;
+        let rows = stmt.query(rusqlite::params_from_iter([
+            limit.map(|n| n as i64),
+            offset.map(|n| n as i64),
+        ]))?;
+        let mapped = rows
+            .mapped(row_to_secret)
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        Ok(mapped)
     }
 
     pub fn get_secret_by_id(&self, id: &str) -> Result<Option<Secret>> {

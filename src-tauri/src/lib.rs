@@ -1,6 +1,7 @@
 use keydock_core::{
-    default_database_path, format_env, initialize_vault, unlock_vault, vault_status, AppStore,
-    ApiKey, ApiKeyInput, AuditLog, Secret, SecretInput, VaultStatus, Workspace, WorkspaceVariable,
+    default_database_path, format_env, initialize_vault, unlock_vault, vault_status, ApiKey,
+    ApiKeyInput, AppStore, AuditLog, Secret, SecretInput, VaultStatus, Workspace,
+    WorkspaceVariable,
 };
 use serde::Serialize;
 use std::{path::PathBuf, sync::Mutex};
@@ -76,8 +77,12 @@ fn lock_vault(state: State<'_, AppState>) -> CommandResult<()> {
 }
 
 #[tauri::command]
-fn list_secrets(state: State<'_, AppState>) -> CommandResult<Vec<Secret>> {
-    Ok(state.store()?.list_secrets()?)
+fn list_secrets(
+    state: State<'_, AppState>,
+    limit: Option<usize>,
+    offset: Option<usize>,
+) -> CommandResult<Vec<Secret>> {
+    Ok(state.store()?.list_secrets(limit, offset)?)
 }
 
 #[tauri::command]
@@ -100,10 +105,7 @@ fn delete_secret(state: State<'_, AppState>, id_or_name: String) -> CommandResul
 }
 
 #[tauri::command]
-fn list_api_keys(
-    state: State<'_, AppState>,
-    secret: Option<String>,
-) -> CommandResult<Vec<ApiKey>> {
+fn list_api_keys(state: State<'_, AppState>, secret: Option<String>) -> CommandResult<Vec<ApiKey>> {
     Ok(state.store()?.list_api_keys(secret.as_deref())?)
 }
 

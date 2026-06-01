@@ -249,7 +249,7 @@ fn secret_command(store: &AppStore, command: SecretCommand) -> Result<()> {
             println!("created secret {} ({})", secret.name, secret.id);
         }
         SecretCommand::List => {
-            for secret in store.list_secrets()? {
+            for secret in store.list_secrets(None, None)? {
                 println!(
                     "{}\t{}\t{:?}\t{}\t{}",
                     secret.id,
