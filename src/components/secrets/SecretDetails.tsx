@@ -1,6 +1,6 @@
 import { PlusIcon, SettingsIcon, Trash2Icon } from "lucide-react"
 import type { FormEvent } from "react"
-import { useMemo } from "react"
+import { useCallback, useMemo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import type { UseApiKeys } from "@/hooks/useApiKeys"
@@ -45,9 +45,12 @@ export function SecretDetails({
     await apiKeys.save(secret.id)
   }
 
-  async function handleDelete(key: ApiKey) {
-    await apiKeys.remove(key.id, key.name)
-  }
+  const handleDelete = useCallback(
+    async (key: ApiKey) => {
+      await apiKeys.remove(key.id, key.name)
+    },
+    [apiKeys.remove],
+  )
 
   return (
     <div className="space-y-6">

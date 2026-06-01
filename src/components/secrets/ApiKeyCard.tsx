@@ -1,3 +1,4 @@
+import { memo } from "react"
 import { CheckIcon, CodeIcon, CopyIcon, EyeIcon, Trash2Icon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -17,9 +18,10 @@ const MASK = "••••••••••••••••••••••
 
 /**
  * Single API key row. Renders the metadata + value (masked or revealed)
- * and the reveal/copy/delete action cluster.
+ * and the reveal/copy/delete action cluster. Memoized so keystrokes in
+ * the create-secret form do not re-render every existing card.
  */
-export function ApiKeyCard({
+function ApiKeyCardImpl({
   apiKey,
   revealed,
   onReveal,
@@ -115,3 +117,5 @@ export function ApiKeyCard({
     </Card>
   )
 }
+
+export const ApiKeyCard = memo(ApiKeyCardImpl)
