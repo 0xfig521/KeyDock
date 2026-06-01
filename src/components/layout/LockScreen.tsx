@@ -13,17 +13,25 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/useToast"
-import { useVault } from "@/hooks/useVault"
+import type { UseVault } from "@/hooks/useVault"
 import { cn } from "@/lib/utils"
+
+interface LockScreenProps {
+  vault: UseVault
+}
 
 /**
  * Master-password gate. Either initializes a fresh vault or unlocks an
  * existing one depending on `vault.initialized`. Uses a single
  * `vault.submit(password)` action — the hook decides which Tauri command
  * to call.
+ *
+ * Receives `vault` from App as a prop so the unlock state lives in a
+ * single hook instance; otherwise the LockScreen would hold its own
+ * `useVault()` whose `ready` flag never reaches the App-level gate and
+ * the UI would stay on the lock screen after a successful unlock.
  */
-export function LockScreen() {
-  const vault = useVault()
+export function LockScreen({ vault }: LockScreenProps) {
   const { toast } = useToast()
   const [password, setPassword] = useState("")
 

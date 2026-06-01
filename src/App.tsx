@@ -57,7 +57,7 @@ export function App() {
   if (!vault.ready) {
     return (
       <>
-        <LockScreen />
+        <LockScreen vault={vault} />
         <ToastView />
       </>
     )

@@ -2,7 +2,6 @@ import { KeyRoundIcon, LayersIcon, LockIcon, ShieldCheckIcon, ShieldIcon } from 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { useVault } from "@/hooks/useVault"
 import { cn } from "@/lib/utils"
 
 export type SidebarTab = "secrets" | "workspaces" | "audit"
@@ -32,10 +31,8 @@ export function Sidebar({
   workspaceCount,
   onLockClick,
 }: SidebarProps) {
-  // Kept subscribed so future per-tab status can be derived from vault state.
   // Lock action is delegated to the host (App) so it can also clear
   // revealed/exported state in the same render tick.
-  useVault()
 
   return (
     <aside className="w-[260px] h-screen border-r border-border bg-card/20 backdrop-blur-md flex flex-col justify-between p-4 sticky top-0 shrink-0 z-40">
