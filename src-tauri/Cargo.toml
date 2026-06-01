@@ -1,0 +1,24 @@
+[package]
+name = "keydock"
+version = "0.1.0"
+description = "Developer Secret Workspace for AI Era"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "keydock_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+anyhow.workspace = true
+arboard.workspace = true
+keydock-core = { path = "../crates/keydock-core" }
+serde.workspace = true
+tauri = { version = "2", features = [] }
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-shell = "2"
+

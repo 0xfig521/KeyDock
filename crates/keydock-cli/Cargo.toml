@@ -1,0 +1,18 @@
+[package]
+name = "keydock-cli"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "keydock"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+arboard.workspace = true
+clap.workspace = true
+keydock-core = { path = "../keydock-core" }
+serde_json.workspace = true
+
