@@ -11,7 +11,7 @@ export const emptySecretForm = {
   description: "",
 }
 
-export const emptyApiKeyForm = {
+export const emptyKeyForm = {
   name: "",
   value: "",
   envName: "",
@@ -29,7 +29,7 @@ export const presets: PresetDef[] = [
     modelName: "anthropic/claude-3.5-sonnet",
     tags: "ai,llm",
     description: "Managed OpenRouter secrets",
-    apiKey: { name: "default", env: "OPENAI_API_KEY" },
+    key: { name: "default", env: "OPENAI_API_KEY" },
   },
   {
     name: "DeepSeek",
@@ -38,7 +38,7 @@ export const presets: PresetDef[] = [
     modelName: "deepseek-chat",
     tags: "ai,llm",
     description: "Managed DeepSeek secrets",
-    apiKey: { name: "default", env: "DEEPSEEK_API_KEY" },
+    key: { name: "default", env: "DEEPSEEK_API_KEY" },
   },
   {
     name: "Cloudflare",
@@ -47,7 +47,7 @@ export const presets: PresetDef[] = [
     modelName: "",
     tags: "cloud,cdn",
     description: "Managed Cloudflare secrets",
-    apiKey: { name: "default", env: "CLOUDFLARE_API_TOKEN" },
+    key: { name: "default", env: "CLOUDFLARE_API_TOKEN" },
   },
   {
     name: "Tavily",
@@ -56,7 +56,7 @@ export const presets: PresetDef[] = [
     modelName: "",
     tags: "search",
     description: "Managed Tavily secrets",
-    apiKey: { name: "default", env: "TAVILY_API_KEY" },
+    key: { name: "default", env: "TAVILY_API_KEY" },
   },
 ]
 

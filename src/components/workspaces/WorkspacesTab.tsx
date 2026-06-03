@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useRef } from "react"
 import type { FormEvent } from "react"
 import { LayersIcon, PlusIcon } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
-import type { UseApiKeys } from "@/hooks/useApiKeys"
+import type { UseKeys } from "@/hooks/useKeys"
 import { useVariables } from "@/hooks/useVariables"
 import type { UseWorkspaces } from "@/hooks/useWorkspaces"
 import { WorkspaceDetails } from "./WorkspaceDetails"
 import { WorkspaceList } from "./WorkspaceList"
 
 interface WorkspacesTabProps {
-  apiKeys: UseApiKeys
+  keys: UseKeys
   workspaces: UseWorkspaces
   selectedWorkspaceId: string
   selectedSecretId: string
@@ -18,13 +19,14 @@ interface WorkspacesTabProps {
 }
 
 export function WorkspacesTab({
-  apiKeys,
+  keys,
   workspaces,
   selectedWorkspaceId,
   selectedSecretId,
   vaultReady,
   onSelectWorkspace,
 }: WorkspacesTabProps) {
+  const { t } = useTranslation()
   const variables = useVariables(selectedWorkspaceId, vaultReady)
   const createInputRef = useRef<HTMLInputElement>(null)
   const focusCreateInput = useCallback(() => {
@@ -56,23 +58,25 @@ export function WorkspacesTab({
   }
 
   return (
-    <div className="flex flex-1 min-h-screen">
+    <div className="flex flex-1 min-w-0 min-h-screen overflow-hidden">
       <WorkspaceList
         workspaces={workspaces.workspaces}
         formName={workspaces.formName}
         submitting={workspaces.submitting}
         selectedId={selectedWorkspaceId}
+        loading={workspaces.loading}
         onSelect={onSelectWorkspace}
         onFormNameChange={workspaces.setFormName}
         onCreate={handleCreate}
         createInputRef={createInputRef}
+        activeWorkspaceId={variables.activeWorkspace?.id ?? null}
       />
 
-      <div className="flex-grow p-8 overflow-y-auto max-w-5xl">
+      <div className="flex-1 min-w-0 p-8 overflow-y-auto overflow-x-hidden">
         {selected ? (
           <WorkspaceDetails
             workspace={selected}
-            apiKeys={apiKeys.apiKeys}
+            keys={keys.keys}
             selectedSecretId={selectedSecretId}
             variables={variables}
           />
@@ -89,25 +93,25 @@ interface WorkspacesTabEmptyProps {
 }
 
 function WorkspacesTabEmpty({ onCreate }: WorkspacesTabEmptyProps) {
+  const { t } = useTranslation()
   return (
     <div className="space-y-5 py-10 text-center max-w-sm mx-auto">
-      <LayersIcon className="size-10 text-zinc-700 mx-auto" />
+      <LayersIcon className="size-10 text-muted-foreground mx-auto" />
       <div className="space-y-1">
-        <h3 className="text-sm font-semibold text-zinc-300">
-          Workspace Environment Composer
+        <h3 className="text-sm font-semibold text-card-foreground">
+          {t("workspaces.workspaceComposer")}
         </h3>
-        <p className="text-xs text-zinc-500 leading-relaxed">
-          Create a workspace to map your Secrets into environment variables for
-          launch-time injection.
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {t("workspaces.composerDesc")}
         </p>
       </div>
       <Button
         onClick={onCreate}
         size="sm"
-        className="bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800"
+        className="bg-card border border-border text-card-foreground hover:bg-accent"
       >
         <PlusIcon className="size-3.5 mr-1.5" />
-        Create your first workspace
+        {t("workspaces.createFirst")}
       </Button>
     </div>
   )

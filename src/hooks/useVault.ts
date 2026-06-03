@@ -11,6 +11,7 @@ export interface UseVault {
   initialized: boolean
   ready: boolean
   submitting: boolean
+  checking: boolean
   submit: (password: string) => Promise<void>
   lock: () => Promise<void>
   markReady: () => void
@@ -48,11 +49,11 @@ export function useVault(): UseVault {
         setSubmitting(true)
         if (initialized) {
           await unlockMasterPassword(password)
-          show("Vault unlocked successfully", "success")
+          show("Vault unlocked", "success")
         } else {
           await setupMasterPassword(password)
           setInitialized(true)
-          show("Vault initialized and unlocked", "success")
+          show("Vault created and unlocked", "success")
         }
         setReady(true)
       } catch (e) {
@@ -74,13 +75,11 @@ export function useVault(): UseVault {
     }
   }, [show])
 
-  // statusChecked is currently unused but kept for future UI gating
-  void statusChecked
-
   return {
     initialized,
     ready,
     submitting,
+    checking: !statusChecked,
     submit,
     lock,
     markReady: () => setReady(true),

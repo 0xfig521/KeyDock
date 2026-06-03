@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -11,52 +12,94 @@ import {
 export type ToastType = "info" | "success" | "error"
 
 export interface Toast {
-  id: number
+  id: string
   message: string
   type: ToastType
 }
 
 interface ToastApi {
+  /** Latest toast (for backward compat with LockScreen inline rendering). */
   toast: Toast | null
-  show: (message: string, type?: ToastType) => void
+  /** All currently visible toasts. */
+  toasts: Toast[]
+  show: (message: string, type?: ToastType, durationMs?: number) => void
+  dismiss: (id: string) => void
 }
 
 const ToastContext = createContext<ToastApi | null>(null)
 
-const TOAST_DURATION_MS = 4000
+const MAX_TOASTS = 5
+const DEFAULT_DURATION_MS = 5000
+
+let idCounter = 0
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toast, setToast] = useState<Toast | null>(null)
-  const timerRef = useRef<number | null>(null)
+  const [toasts, setToasts] = useState<Toast[]>([])
+  const timerMap = useRef<Map<string, number>>(new Map())
 
-  const show = useCallback(
-    (message: string, type: ToastType = "info") => {
-      // Replace any existing toast (and its dismiss timer) with the new one.
-      if (timerRef.current !== null) {
-        window.clearTimeout(timerRef.current)
-        timerRef.current = null
-      }
-      setToast({ id: Date.now(), message, type })
+  const clearTimer = useCallback((id: string) => {
+    const existing = timerMap.current.get(id)
+    if (existing !== undefined) {
+      window.clearTimeout(existing)
+      timerMap.current.delete(id)
+    }
+  }, [])
+
+  const dismiss = useCallback(
+    (id: string) => {
+      clearTimer(id)
+      setToasts((prev) => prev.filter((t) => t.id !== id))
     },
-    [],
+    [clearTimer],
   )
 
+  const show = useCallback(
+    (message: string, type: ToastType = "info", durationMs?: number) => {
+      const id = `${Date.now()}-${++idCounter}`
+      const duration = durationMs ?? DEFAULT_DURATION_MS
+
+      setToasts((prev) => {
+        const next = [...prev, { id, message, type }]
+        // Enforce max count: remove oldest (index 0) when exceeding.
+        while (next.length > MAX_TOASTS) {
+          const removed = next.shift()!
+          // Clean up the timer for the removed toast.
+          const timer = timerMap.current.get(removed.id)
+          if (timer !== undefined) {
+            window.clearTimeout(timer)
+            timerMap.current.delete(removed.id)
+          }
+        }
+        return next
+      })
+
+      // Schedule auto-dismiss.
+      const timer = window.setTimeout(() => {
+        dismiss(id)
+      }, duration)
+      timerMap.current.set(id, timer)
+    },
+    [dismiss],
+  )
+
+  // Clean up all timers on unmount.
   useEffect(() => {
-    if (!toast) return
-    timerRef.current = window.setTimeout(() => {
-      setToast(null)
-      timerRef.current = null
-    }, TOAST_DURATION_MS)
     return () => {
-      if (timerRef.current !== null) {
-        window.clearTimeout(timerRef.current)
-        timerRef.current = null
+      for (const timer of timerMap.current.values()) {
+        window.clearTimeout(timer)
       }
+      timerMap.current.clear()
     }
-  }, [toast])
+  }, [])
+
+  // Derived single-toast for backward compat (LockScreen uses `toast`).
+  const toast = useMemo(
+    (): Toast | null => (toasts.length > 0 ? toasts[toasts.length - 1] : null),
+    [toasts],
+  )
 
   return (
-    <ToastContext.Provider value={{ toast, show }}>
+    <ToastContext.Provider value={{ toast, toasts, show, dismiss }}>
       {children}
     </ToastContext.Provider>
   )

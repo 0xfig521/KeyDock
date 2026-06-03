@@ -1,30 +1,36 @@
 import { useCallback, useEffect, useState } from "react"
 import { useToast } from "@/hooks/useToast"
 import {
-  addSecretDefaultApiKeysToWorkspace as addDefaultsApi,
+  addSecretDefaultKeysToWorkspace as addDefaultsApi,
+  activateWorkspace as activateWorkspaceApi,
   deleteWorkspaceVariable as deleteVariableApi,
+  deactivateActiveWorkspace as deactivateActiveWorkspaceApi,
   exportEnv as exportEnvApi,
+  getActiveWorkspace,
   listWorkspaceVariables,
   setWorkspaceVariable as setVariableApi,
 } from "@/lib/tauri"
 import { isValidEnvName } from "@/lib/env"
-import type { WorkspaceVariable } from "@/types"
+import type { ActiveWorkspace, WorkspaceVariable } from "@/types"
 
 export interface UseVariables {
   variables: WorkspaceVariable[]
-  mappingApiKey: string
-  setMappingApiKey: (id: string) => void
+  mappingKey: string
+  setMappingKey: (id: string) => void
   mappingEnv: string
   setMappingEnv: (env: string) => void
   submitting: boolean
   exportedEnv: string
+  activeWorkspace: ActiveWorkspace | null
   map: (params: {
-    apiKeyId: string
+    keyId: string
     envName: string
   }) => Promise<WorkspaceVariable | null>
   unmap: (envName: string) => Promise<void>
   addDefaultsForSecret: (secretId: string) => Promise<void>
   generateEnv: () => Promise<void>
+  activate: () => Promise<void>
+  deactivate: () => Promise<void>
   refresh: () => Promise<void>
   clearExport: () => void
 }
@@ -35,10 +41,11 @@ export function useVariables(
 ): UseVariables {
   const { show } = useToast()
   const [variables, setVariables] = useState<WorkspaceVariable[]>([])
-  const [mappingApiKey, setMappingApiKey] = useState("")
+  const [mappingKey, setMappingKey] = useState("")
   const [mappingEnv, setMappingEnv] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [exportedEnv, setExportedEnv] = useState("")
+  const [activeWorkspace, setActiveWorkspace] = useState<ActiveWorkspace | null>(null)
 
   const refresh = useCallback(async () => {
     if (!selectedWorkspace) {
@@ -62,9 +69,28 @@ export function useVariables(
     refresh()
   }, [selectedWorkspace, vaultReady, refresh])
 
+  const refreshActiveWorkspace = useCallback(() => {
+    getActiveWorkspace()
+      .then(setActiveWorkspace)
+      .catch(() => setActiveWorkspace(null))
+  }, [])
+
+  // Sync active workspace with CLI — listen for file-change events from backend.
+  useEffect(() => {
+    refreshActiveWorkspace()
+    let unlisten: (() => void) | undefined
+    import("@tauri-apps/api/event")
+      .then(({ listen }) => listen("active-workspace-changed", refreshActiveWorkspace))
+      .then((fn) => {
+        unlisten = fn
+      })
+      .catch(() => {})
+    return () => unlisten?.()
+  }, [refreshActiveWorkspace])
+
   const map = useCallback<UseVariables["map"]>(
-    async ({ apiKeyId, envName }) => {
-      if (!selectedWorkspace || !apiKeyId) return null
+    async ({ keyId, envName }) => {
+      if (!selectedWorkspace || !keyId) return null
       const finalEnv = envName.trim()
       if (!isValidEnvName(finalEnv)) {
         show(`Invalid env name: "${finalEnv}"`, "error")
@@ -72,9 +98,9 @@ export function useVariables(
       }
       try {
         setSubmitting(true)
-        const v = await setVariableApi(selectedWorkspace, finalEnv, apiKeyId)
-        show("Key mapped to workspace", "success")
-        setMappingApiKey("")
+        const v = await setVariableApi(selectedWorkspace, finalEnv, keyId)
+        show("Variable mapped", "success")
+        setMappingKey("")
         setMappingEnv("")
         await refresh()
         return v
@@ -93,7 +119,7 @@ export function useVariables(
       if (!selectedWorkspace) return
       try {
         await deleteVariableApi(selectedWorkspace, envName)
-        show(`Removed mapping for: ${envName}`, "info")
+        show(`Unmapped ${envName}`, "info")
         await refresh()
       } catch (e) {
         show(extractMessage(e), "error")
@@ -107,7 +133,7 @@ export function useVariables(
       if (!selectedWorkspace) return
       try {
         const mapped = await addDefaultsApi(selectedWorkspace, secretId)
-        show(`Mapped ${mapped.length} default keys to workspace`, "success")
+        show(`Added ${mapped.length} keys to workspace`, "success")
         await refresh()
       } catch (e) {
         show(extractMessage(e), "error")
@@ -121,11 +147,32 @@ export function useVariables(
     try {
       const text = await exportEnvApi(selectedWorkspace)
       setExportedEnv(text)
-      show("Workspace environment generated", "success")
+      show("Environment exported", "success")
     } catch (e) {
       show(extractMessage(e), "error")
     }
   }, [selectedWorkspace, show])
+
+  const activate = useCallback(async () => {
+    if (!selectedWorkspace) return
+    try {
+      const active = await activateWorkspaceApi(selectedWorkspace)
+      setActiveWorkspace(active)
+      show(`Activated ${active.name}. New shells will load ${active.envCount} env vars.`, "success")
+    } catch (e) {
+      show(extractMessage(e), "error")
+    }
+  }, [selectedWorkspace, show])
+
+  const deactivate = useCallback(async () => {
+    try {
+      await deactivateActiveWorkspaceApi()
+      setActiveWorkspace(null)
+      show("KeyDock environment deactivated", "info")
+    } catch (e) {
+      show(extractMessage(e), "error")
+    }
+  }, [show])
 
   // Wipe generated .env text — called by App on lock.
   const clearExport = useCallback(() => {
@@ -134,16 +181,19 @@ export function useVariables(
 
   return {
     variables,
-    mappingApiKey,
-    setMappingApiKey,
+    mappingKey,
+    setMappingKey,
     mappingEnv,
     setMappingEnv,
     submitting,
     exportedEnv,
+    activeWorkspace,
     map,
     unmap,
     addDefaultsForSecret,
     generateEnv,
+    activate,
+    deactivate,
     refresh,
     clearExport,
   }

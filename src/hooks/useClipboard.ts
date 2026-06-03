@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react"
-import { auditCopy, clearClipboardIfMatches, quickCopyText } from "@/lib/tauri"
+import { clearClipboardIfMatches, copyWithAudit } from "@/lib/tauri"
 import { useToast } from "@/hooks/useToast"
 
 const VISUAL_INDICATOR_MS = 4000
@@ -24,14 +24,14 @@ export function useClipboard(): UseClipboard {
   const copy = useCallback<UseClipboard["copy"]>(
     async ({ text, label, targetId, workspaceId, envName }) => {
       try {
-        await quickCopyText(text)
-        await auditCopy({
+        await copyWithAudit({
+          text,
           targetId: targetId ?? null,
           workspaceId: workspaceId ?? null,
           envName: envName ?? null,
         })
         setCopiedText(text)
-        show(`${label} copied to clipboard (clears in 30s)`, "success")
+        show(`${label} copied — clears in 30s`, "success")
 
         // Reset visual indicator after 4s.
         if (clearVisualRef.current !== null) {

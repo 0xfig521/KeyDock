@@ -1,36 +1,44 @@
-import { PlusIcon, SettingsIcon, Trash2Icon } from "lucide-react"
+import { CheckIcon, CopyIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react"
 import type { FormEvent } from "react"
 import { useCallback, useMemo } from "react"
+import { useTranslation } from "react-i18next"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import type { UseApiKeys } from "@/hooks/useApiKeys"
+import type { UseKeys } from "@/hooks/useKeys"
+import { useClipboard } from "@/hooks/useClipboard"
+import { useToast } from "@/hooks/useToast"
 import { defaultEnvNameForSecret } from "@/constants"
-import { ApiKeyCard } from "./ApiKeyCard"
-import { ApiKeyForm } from "./ApiKeyForm"
-import type { ApiKey, Secret } from "@/types"
+import { KeyCard } from "./KeyCard"
+import { KeyForm } from "./KeyForm"
+import type { ActiveWorkspace, Key, Secret } from "@/types"
 
 interface SecretDetailsProps {
   secret: Secret
-  apiKeys: UseApiKeys
+  keys: UseKeys
   selectedWorkspaceId: string
+  activeWorkspace: ActiveWorkspace | null
   onEdit: () => void
   onDelete: () => void
 }
 
 export function SecretDetails({
   secret,
-  apiKeys,
+  keys,
   selectedWorkspaceId,
+  activeWorkspace,
   onEdit,
   onDelete,
 }: SecretDetailsProps) {
-  const selectedApiKeys = useMemo(
-    () => apiKeys.apiKeys.filter((k) => k.secretId === secret.id),
-    [apiKeys.apiKeys, secret.id],
+  const { t } = useTranslation()
+  const { copiedText, copy } = useClipboard()
+  const { show } = useToast()
+  const selectedKeys = useMemo(
+    () => keys.keys.filter((k) => k.secretId === secret.id),
+    [keys.keys, secret.id],
   )
 
   function openCreateForm() {
-    apiKeys.openForm({
+    keys.openForm({
       name: "default",
       value: "",
       envName: defaultEnvNameForSecret(secret.name),
@@ -41,105 +49,144 @@ export function SecretDetails({
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    if (apiKeys.submitting) return
-    await apiKeys.save(secret.id)
+    if (keys.submitting) return
+    await keys.save(secret.id)
   }
 
   const handleDelete = useCallback(
-    async (key: ApiKey) => {
-      await apiKeys.remove(key.id, key.name)
+    async (key: Key) => {
+      await keys.remove(key.id, key.name)
     },
-    [apiKeys.remove],
+    [keys.remove],
   )
 
   const handleReveal = useCallback(
-    (key: ApiKey, workspaceId: string) =>
-      apiKeys.reveal(key, workspaceId || null),
-    [apiKeys.reveal],
+    async (key: Key, workspaceId: string): Promise<string | undefined> =>
+      keys.reveal(key, workspaceId || null),
+    [keys.reveal],
   )
 
   const handleEdit = useCallback(
-    (key: ApiKey) => apiKeys.startEdit(key),
-    [apiKeys.startEdit],
+    (key: Key) => keys.startEdit(key),
+    [keys.startEdit],
+  )
+
+  const handleActivate = useCallback(
+    async (key: Key) => {
+      if (!activeWorkspace || activeWorkspace.sourceType !== "workspace") {
+        show("No active workspace. Activate a workspace first.", "error")
+        return
+      }
+      await keys.activate(key, activeWorkspace.id, activeWorkspace.envNames)
+    },
+    [keys.activate, activeWorkspace, show],
   )
 
   return (
     <div className="space-y-6">
       {/* Service header */}
-      <div className="flex items-start justify-between gap-6 pb-4 border-b border-zinc-900">
+      <div className="flex items-start justify-between gap-4 gap-y-2 pb-4 border-b border-border flex-wrap">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-100">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground break-all min-w-0">
               {secret.name}
             </h1>
             <Badge
               variant="outline"
-              className="text-[10px] uppercase font-mono border-zinc-800 text-zinc-400"
+              className="text-[10px] uppercase font-mono border-border text-muted-foreground shrink-0"
             >
               {secret.category}
             </Badge>
           </div>
-          <p className="text-xs text-zinc-400 max-w-xl">
-            {secret.description || "No description provided for this group."}
+          <p className="text-xs text-muted-foreground max-w-xl">
+            {secret.description || t("secretDetails.noDescription")}
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center justify-end gap-1 shrink-0 flex-wrap">
           <Button
             variant="outline"
             size="sm"
             onClick={onEdit}
-            className="h-7 text-xs border-zinc-850 text-zinc-400 hover:text-zinc-200"
+            className="h-7 w-7 p-0 border-border text-muted-foreground hover:text-foreground"
+            title={t("secretDetails.editService")}
           >
-            <SettingsIcon className="size-3 mr-1.5" />
-            Edit Group
+            <PencilIcon className="size-3.5" />
           </Button>
 
           <Button
             variant="outline"
             size="sm"
             onClick={onDelete}
-            className="h-7 text-xs border-zinc-900 text-zinc-500 hover:text-rose-400 hover:bg-rose-950/20"
+            className="h-7 w-7 p-0 border-border text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/20"
+            title={t("secretDetails.deleteService")}
           >
-            <Trash2Icon className="size-3 mr-1.5" />
-            Delete Group
+            <Trash2Icon className="size-3.5" />
           </Button>
         </div>
       </div>
 
       {/* Metadata block */}
-      <div className="space-y-2 bg-zinc-950/40 border border-zinc-900 rounded-lg p-3 text-xs">
-        <div className="grid grid-cols-2 gap-4">
+      <div className="space-y-2 bg-muted/60 border border-border rounded-lg p-3 text-xs">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {secret.baseUrl && (
             <div className="space-y-1">
-              <span className="text-[10px] font-mono text-zinc-500 uppercase">
-                Base URL
+              <span className="text-[10px] font-mono text-muted-foreground uppercase">
+                {t("secretDetails.baseUrl")}
               </span>
-              <code className="block font-mono text-[11px] text-zinc-300 truncate">
+              <code
+                className="font-mono text-[11px] text-card-foreground truncate cursor-pointer hover:text-foreground transition-colors flex items-center gap-1 min-w-0"
+                onClick={() =>
+                  copy({
+                    text: secret.baseUrl!,
+                    label: "Base URL",
+                  })
+                }
+                title={t("secretDetails.copyBaseUrl")}
+              >
+                {copiedText === secret.baseUrl ? (
+                  <CheckIcon className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                ) : (
+                  <CopyIcon className="size-3 text-muted-foreground shrink-0" />
+                )}
                 {secret.baseUrl}
               </code>
             </div>
           )}
           {secret.modelName && (
             <div className="space-y-1">
-              <span className="text-[10px] font-mono text-zinc-500 uppercase">
-                Default Model
+              <span className="text-[10px] font-mono text-muted-foreground uppercase">
+                {t("secretDetails.defaultModel")}
               </span>
-              <code className="block text-zinc-300 font-mono text-[11px]">
+              <code
+                className="text-card-foreground font-mono text-[11px] cursor-pointer hover:text-foreground transition-colors flex items-center gap-1 min-w-0"
+                onClick={() =>
+                  copy({
+                    text: secret.modelName!,
+                    label: "Model name",
+                  })
+                }
+                title={t("secretDetails.copyModelName")}
+              >
+                {copiedText === secret.modelName ? (
+                  <CheckIcon className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                ) : (
+                  <CopyIcon className="size-3 text-muted-foreground shrink-0" />
+                )}
                 {secret.modelName}
               </code>
             </div>
           )}
         </div>
         {(secret.tags ?? []).length > 0 && (
-          <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-zinc-900/50">
-            <span className="text-[10px] font-mono text-zinc-500 uppercase">
-              Tags
+          <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-border/50">
+            <span className="text-[10px] font-mono text-muted-foreground uppercase">
+              {t("secretDetails.tags")}
             </span>
             {(secret.tags ?? []).map((tag) => (
               <span
                 key={tag}
-                className="text-[10px] font-mono bg-zinc-800/60 text-zinc-400 px-1.5 py-0.5 rounded border border-zinc-800"
+                className="text-[10px] font-mono bg-muted/60 text-muted-foreground px-1.5 py-0.5 rounded border border-border"
               >
                 {tag}
               </span>
@@ -148,53 +195,55 @@ export function SecretDetails({
         )}
       </div>
 
-      {/* API keys block */}
+      {/* Keys block */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-            Credentials & API Keys
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {t("secretDetails.keys")}
           </h3>
-          {!apiKeys.showForm && (
+          {!keys.showForm && (
             <Button
               size="sm"
               variant="ghost"
               onClick={openCreateForm}
-              className="h-7 text-xs bg-zinc-900/60 hover:bg-zinc-800 text-zinc-300 border border-zinc-800"
+              className="h-7 text-xs bg-muted/60 hover:bg-accent text-card-foreground border border-border"
             >
               <PlusIcon className="size-3 mr-1" />
-              Add API Key
+              {t("secretDetails.addKey")}
             </Button>
           )}
         </div>
 
-        {apiKeys.showForm && (
-          <ApiKeyForm
-            form={apiKeys.form}
-            onChange={apiKeys.setForm}
+        {keys.showForm && (
+          <KeyForm
+            form={keys.form}
+            onChange={keys.setForm}
             onSubmit={handleSubmit}
-            onCancel={apiKeys.closeForm}
-            submitting={apiKeys.submitting}
-            editingKey={Boolean(apiKeys.editingId)}
+            onCancel={keys.closeForm}
+            submitting={keys.submitting}
+            editingKey={Boolean(keys.editingId)}
           />
         )}
 
         <div className="space-y-2.5">
-          {selectedApiKeys.length === 0 ? (
-            <div className="p-8 border border-dashed rounded-lg border-zinc-800 text-center">
-              <p className="text-xs text-zinc-500">
-                No API Keys created yet for this service.
+          {selectedKeys.length === 0 ? (
+            <div className="p-8 border border-dashed rounded-lg border-border text-center">
+              <p className="text-xs text-muted-foreground">
+                {t("secretDetails.noKeys")}
               </p>
             </div>
           ) : (
-            selectedApiKeys.map((key) => (
-              <ApiKeyCard
+            selectedKeys.map((key) => (
+              <KeyCard
                 key={key.id}
-                apiKey={key}
-                revealed={apiKeys.getRevealed(key.id)}
+                key_={key}
+                revealed={keys.getRevealed(key.id)}
                 onReveal={handleReveal}
                 onEdit={handleEdit}
+                onActivate={handleActivate}
                 onDelete={handleDelete}
                 workspaceIdForAudit={selectedWorkspaceId}
+                activeWorkspace={activeWorkspace}
               />
             ))
           )}

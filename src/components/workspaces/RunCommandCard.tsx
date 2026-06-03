@@ -1,4 +1,5 @@
 import { CopyIcon } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Card } from "@/components/ui/card"
 
 interface RunCommandCardProps {
@@ -7,29 +8,29 @@ interface RunCommandCardProps {
 }
 
 export function RunCommandCard({ command, onCopy }: RunCommandCardProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="space-y-2.5">
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-        Terminal Shell Execution
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        {t("runCommand.title")}
       </h3>
-      <Card className="bg-zinc-950/60 border-zinc-900 p-4 space-y-3 shadow-sm">
-        <span className="text-[10px] font-mono text-zinc-500 uppercase block">
-          Terminal Inject Command
+      <Card className="bg-muted/80 border-border p-4 space-y-3 shadow-sm">
+        <span className="text-[10px] font-mono text-muted-foreground uppercase block">
+          {t("runCommand.cliCommand")}
         </span>
 
         <button
           type="button"
           onClick={onCopy}
-          className="w-full text-left bg-black/80 rounded-md border border-zinc-900 p-2.5 font-mono text-[11px] text-emerald-400 hover:border-emerald-500/20 hover:bg-black/90 transition-all flex items-center justify-between gap-2 group"
+          className="w-full text-left bg-foreground/10 rounded-md border border-border p-2.5 font-mono text-[11px] text-emerald-600 dark:text-emerald-400 hover:border-emerald-600/20 dark:hover:border-emerald-500/20 hover:bg-foreground/5 transition-all flex items-center justify-between gap-2 group"
         >
           <span className="truncate block">$ {command}</span>
-          <CopyIcon className="size-3 text-zinc-500 group-hover:text-emerald-400 shrink-0 transition-colors" />
+          <CopyIcon className="size-3 text-muted-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 shrink-0 transition-colors" />
         </button>
 
-        <p className="text-[10px] text-zinc-500 leading-normal">
-          Runs your local development pipelines without hardcoding secrets to
-          file scripts. The database injects variables straight to the
-          processes environment.
+        <p className="text-[10px] text-muted-foreground leading-normal">
+          {t("runCommand.description")}
         </p>
       </Card>
     </div>

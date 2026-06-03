@@ -20,7 +20,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'"
     }
   },
   "bundle": {
@@ -31,8 +31,20 @@
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/256x256.png",
-      "icons/512x512.png"
+      "icons/512x512.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnRzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDFFOTIzNzI0MDM1OTA2NkQKUldSdEJsa0RKRGVTSGdrUWlYeHJIUFo5NkNWa2lSelpvT0w2TEkvZHN0UElnWW10ZlU0bTdYUlAK",
+      "endpoints": [
+        "https://github.com/0xfig521/KeyDock/releases/latest/download/update.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }
-

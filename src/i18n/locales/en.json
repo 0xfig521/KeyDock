@@ -1,0 +1,253 @@
+{
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "secrets": "Secrets",
+    "workspaces": "Workspaces",
+    "audit": "Audit Log",
+    "settings": "Settings",
+    "vaultStatus": "Vault Status",
+    "vaultDesc": "Your secrets are encrypted in memory. Closing the app clears all keys.",
+    "lockVault": "Lock"
+  },
+  "lock": {
+    "createTitle": "Create Master Vault",
+    "unlockTitle": "Unlock Vault",
+    "passwordLabel": "Master Password",
+    "passwordPlaceholder": "Password",
+    "createButton": "Create Vault",
+    "unlockButton": "Unlock",
+    "creating": "Creating…",
+    "unlocking": "Unlocking…",
+    "incorrect": "Incorrect password",
+    "localVault": "Local Vault",
+    "unlockDescription": "Enter your master password to unlock the vault.",
+    "createDescription": "Set a strong master password to protect your secrets.",
+    "minCharsHint": "At least 8 characters",
+    "confirmPlaceholder": "Confirm password",
+    "passwordMismatch": "Passwords do not match",
+    "checking": "Checking vault…"
+  },
+  "dashboard": {
+    "heading": "Dashboard",
+    "subtitle": "Overview of your vault, workspaces, and activity",
+    "vaultUnlocked": "Vault Unlocked",
+    "activeWorkspace": "Active Workspace",
+    "active": "Active",
+    "inactive": "Inactive",
+    "envVariables": "env variables",
+    "moreItems": "+{{count}} more",
+    "manageInWorkspaces": "Manage in Workspaces",
+    "goToWorkspaces": "Go to Workspaces",
+    "noActiveWorkspace": "No workspace is currently activated for CLI shell injection.",
+    "statsApiKeys": "API Keys",
+    "statsWorkspaces": "Workspaces",
+    "quickActions": "Quick Actions",
+    "browseSecrets": "Browse Secrets",
+    "manageWorkspaces": "Manage Workspaces",
+    "viewAuditLog": "View Audit Log",
+    "recentActivity": "Recent Activity",
+    "viewAll": "View all",
+    "noActivity": "No activity yet",
+    "activityHint": "Actions like reveal, copy, and export will appear here",
+    "getStarted": "Get Started with KeyDock",
+    "getStartedDesc": "Create your first service group to store API keys and secrets, then map them to a workspace for easy environment injection.",
+    "createServiceGroup": "Create Service Group",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{{count}}m ago",
+    "timeHoursAgo": "{{count}}h ago",
+    "timeDaysAgo": "{{count}}d ago"
+  },
+  "secrets": {
+    "title": "Secrets",
+    "searchPlaceholder": "Search secrets",
+    "createSecret": "Create secret",
+    "noSecretsFound": "No secrets found",
+    "noSecrets": "No secrets yet",
+    "keyCount": "{{count}} keys"
+  },
+  "secretDetails": {
+    "noDescription": "No description",
+    "editService": "Edit Service",
+    "deleteService": "Delete Service",
+    "baseUrl": "Base URL",
+    "defaultModel": "Default Model",
+    "tags": "Tags",
+    "keys": "Keys",
+    "addKey": "Add Key",
+    "noKeys": "No keys yet — add one to get started.",
+    "copyBaseUrl": "Copy base URL",
+    "copyModelName": "Copy model name"
+  },
+  "secretForm": {
+    "editTitle": "Edit Secret",
+    "newTitle": "New Secret",
+    "editDescription": "Update the provider info, endpoints, and metadata.",
+    "newDescription": "Add a provider and configure its endpoints and credentials.",
+    "serviceName": "Service Name",
+    "category": "Category",
+    "apiBaseUrl": "API Base URL",
+    "defaultModel": "Default Model",
+    "tags": "Tags",
+    "description": "Description",
+    "tagsHint": "(separate with commas)",
+    "required": "*",
+    "optional": "(Optional)",
+    "cancel": "Cancel",
+    "saveChanges": "Save Changes",
+    "create": "Create Secret",
+    "namePlaceholder": "e.g. OpenRouter",
+    "urlPlaceholder": "e.g. https://api.openrouter.ai/api/v1",
+    "modelPlaceholder": "e.g. gpt-4o",
+    "tagsPlaceholder": "e.g. ai, production",
+    "descPlaceholder": "What is this service used for?"
+  },
+  "secretForm.validation": {
+    "nameRequired": "Service name is required",
+    "nameEmpty": "Service name cannot be empty"
+  },
+  "keyForm": {
+    "editTitle": "Edit Key",
+    "newTitle": "New Key",
+    "addKey": "Add Key",
+    "saveChanges": "Save Changes",
+    "cancel": "Cancel",
+    "keyName": "Key Name",
+    "envVarName": "Env Variable Name",
+    "value": "Value",
+    "required": "*",
+    "namePlaceholder": "e.g. prod-default, client-a",
+    "envPlaceholder": "e.g. OPENAI_API_KEY",
+    "valuePlaceholder": "sk-…",
+    "valuePlaceholderEdit": "Leave blank to keep current value",
+    "autoInclude": "Auto-include when exporting to workspaces"
+  },
+  "keyForm.validation": {
+    "nameRequired": "Key name is required",
+    "nameEmpty": "Key name cannot be empty",
+    "envFormat": "Must be UPPERCASE with underscores (e.g. OPENAI_API_KEY)",
+    "valueRequired": "Key value is required",
+    "valueEmpty": "Key value cannot be empty"
+  },
+  "keyCard": {
+    "autoInclude": "Auto-include",
+    "encrypted": "Encrypted",
+    "envLabel": "ENV:",
+    "copyEnvName": "Copy env name",
+    "clickToCopy": "Click to copy full key",
+    "reveal": "Reveal full key",
+    "edit": "Edit",
+    "delete": "Delete",
+    "copyValue": "Copy value",
+    "setEnvFirst": "Set env name before adding to workspace",
+    "noActiveWorkspace": "No active workspace to add to",
+    "mappedInWorkspace": "{{envName}} is in workspace",
+    "addToWorkspace": "Add {{envName}} to workspace"
+  },
+  "preset": {
+    "welcome": "Welcome",
+    "welcomeDesc": "A local-first secret manager for developer workflows. Manage API keys and inject them as environment variables in your terminal.",
+    "quickStart": "Quick Start",
+    "applyPreset": "Apply preset",
+    "envInjection": "Environment Injection",
+    "envInjectionDesc": "Rather than loading raw text from .env files, use our CLI in your terminals:"
+  },
+  "workspaces": {
+    "title": "Workspaces",
+    "createPlaceholder": "e.g. dev-env",
+    "createAria": "Create workspace",
+    "noWorkspaces": "No workspaces created",
+    "envGroup": "Environment variable group",
+    "active": "Active",
+    "workspaceComposer": "Workspace Environment Composer",
+    "composerDesc": "Create a workspace to map your secrets to environment variables for shell injection.",
+    "createFirst": "Create your first workspace",
+    "detailsDesc": "Map secrets to environment variables for this workspace."
+  },
+  "workspaceDetails": {
+    "activate": "Activate",
+    "reactivate": "Reactivate",
+    "deactivate": "Deactivate",
+    "deleteWorkspace": "Delete Workspace",
+    "activeEnvPreview": "Active Env Preview",
+    "varsCount": "{{count}} vars",
+    "generatedBy": "# Generated by KeyDock",
+    "envMapping": "Environment Mapping",
+    "importDefaults": "Import defaults",
+    "selectServiceTip": "Select a service in the Secrets tab first",
+    "deleteConfirmTitle": "Delete Workspace",
+    "deleteConfirmMsg": "Delete workspace \"{{name}}\" and its variable mappings? This cannot be undone.",
+    "delete": "Delete"
+  },
+  "variableMapper": {
+    "newMapping": "New Mapping",
+    "keySource": "Key Source",
+    "selectKey": "Select a key",
+    "envVarName": "Env variable name",
+    "envPlaceholder": "e.g. DEEPSEEK_API_KEY",
+    "map": "Map",
+    "validation": {
+      "selectKey": "Please select a key",
+      "envRequired": "Environment variable name is required",
+      "envFormat": "Must be UPPERCASE with underscores (e.g. DEEPSEEK_API_KEY)",
+      "envDuplicate": "This env name is already mapped in this workspace"
+    }
+  },
+  "variableList": {
+    "unbind": "Unbind",
+    "noVariables": "No variables mapped — use the form above to add one."
+  },
+  "envExport": {
+    "title": "Export as .env",
+    "generate": "Generate .env",
+    "refresh": "Refresh",
+    "clear": "Clear",
+    "copyContent": "Copy .env content"
+  },
+  "runCommand": {
+    "title": "Shell Command",
+    "cliCommand": "CLI Command",
+    "description": "Runs with the active KeyDock env cache sourced first, matching new terminal behavior."
+  },
+  "audit": {
+    "title": "Audit Log",
+    "description": "An immutable log of all secret, key, and mapping operations. Each entry records the action, target, workspace, and timestamp. Secret values are never included.",
+    "reload": "Reload logs",
+    "filterAll": "All",
+    "filterReveal": "Reveal & Copy",
+    "filterMutations": "Create & Edit",
+    "filterExport": "Export",
+    "noEvents": "No audit events yet.",
+    "noMatching": "No matching events for this filter."
+  },
+  "shellIntegration": {
+    "title": "Shell Integration",
+    "description": "Install the zsh hook once to auto-source KeyDock environment variables in every new terminal session. This is a global one-time setup — no need to install per workspace.",
+    "install": "Install zsh hook",
+    "installed": "Installed",
+    "checking": "Checking…",
+    "notInstalled": "— Not installed",
+    "detected": "✓ Detected in {{path}}",
+    "recheck": "Re-check status",
+    "warning": "This writes a one-time snippet to your ~/.zshrc. No changes take effect until you open a new terminal tab."
+  },
+  "common": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "delete": "Delete"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "languageDesc": "Choose your preferred language for the application interface.",
+    "english": "English",
+    "chinese": "中文",
+    "theme": "Theme",
+    "themeDesc": "Switch between dark and light appearance.",
+    "dark": "Dark",
+    "light": "Light"
+  },
+  "toast": {
+    "serviceExists": "\"{{name}}\" already exists — form pre-filled, pick a different name.",
+    "serviceCreated": "Service created. Paste your key and click Add Key."
+  }
+}

@@ -1,16 +1,18 @@
 import { invoke } from "@tauri-apps/api/core"
 import type {
-  ApiKey,
-  ApiKeyInput,
+  Key,
+  KeyInput,
+  ActiveWorkspace,
   AuditLog,
   Secret,
   SecretInput,
+  ShellIntegrationStatus,
   VaultStatus,
   Workspace,
   WorkspaceVariable,
 } from "@/types"
 
-// Centralized, typed wrappers for all 24 Tauri commands in src-tauri/src/lib.rs.
+// Centralized, typed wrappers for all Tauri commands in src-tauri/src/lib.rs.
 // Keep parameter naming exactly aligned with #[tauri::command] argument names.
 
 // --- Vault ---
@@ -40,22 +42,22 @@ export const updateSecret = (id: string, input: SecretInput) =>
 export const deleteSecret = (idOrName: string) =>
   invoke<void>("delete_secret", { idOrName })
 
-// --- API keys ---
+// --- Keys ---
 
-export const listApiKeys = (secret: string | null) =>
-  invoke<ApiKey[]>("list_api_keys", { secret })
+export const listKeys = (secret: string | null) =>
+  invoke<Key[]>("list_keys", { secret })
 
-export const createApiKey = (secret: string, input: ApiKeyInput) =>
-  invoke<ApiKey>("create_api_key", { secret, input })
+export const createKey = (secret: string, input: KeyInput) =>
+  invoke<Key>("create_key", { secret, input })
 
-export const updateApiKey = (apiKey: string, input: ApiKeyInput) =>
-  invoke<ApiKey>("update_api_key", { apiKey, input })
+export const updateKey = (key: string, input: KeyInput) =>
+  invoke<Key>("update_key", { key, input })
 
-export const deleteApiKey = (apiKey: string) =>
-  invoke<void>("delete_api_key", { apiKey })
+export const deleteKey = (key: string) =>
+  invoke<void>("delete_key", { key })
 
-export const revealApiKey = (apiKey: string, workspaceId: string | null = null) =>
-  invoke<string>("reveal_api_key", { apiKey, workspaceId })
+export const revealKey = (key: string, workspaceId: string | null = null) =>
+  invoke<string>("reveal_key", { key, workspaceId })
 
 // --- Workspaces ---
 
@@ -75,23 +77,23 @@ export const listWorkspaceVariables = (workspace: string) =>
 export const setWorkspaceVariable = (
   workspace: string,
   envName: string | null,
-  apiKey: string,
+  key: string,
 ) =>
   invoke<WorkspaceVariable>("set_workspace_variable", {
     workspace,
     envName,
-    apiKey,
+    key,
   })
 
 export const deleteWorkspaceVariable = (workspace: string, envName: string) =>
   invoke<void>("delete_workspace_variable", { workspace, envName })
 
-export const addSecretDefaultApiKeysToWorkspace = (
+export const addSecretDefaultKeysToWorkspace = (
   workspace: string,
   secret: string,
 ) =>
   invoke<WorkspaceVariable[]>(
-    "add_secret_default_api_keys_to_workspace",
+    "add_secret_default_keys_to_workspace",
     { workspace, secret },
   )
 
@@ -100,8 +102,34 @@ export const addSecretDefaultApiKeysToWorkspace = (
 export const exportEnv = (workspace: string) =>
   invoke<string>("export_env", { workspace })
 
-export const listAuditLogs = (limit: number) =>
-  invoke<AuditLog[]>("list_audit_logs", { limit })
+export const activateWorkspace = (workspace: string) =>
+  invoke<ActiveWorkspace>("activate_workspace", { workspace })
+
+export const activateKey = (key: string) =>
+  invoke<ActiveWorkspace>("activate_key", { key })
+
+export const deactivateActiveWorkspace = () =>
+  invoke<void>("deactivate_active_workspace")
+
+export const getActiveWorkspace = () =>
+  invoke<ActiveWorkspace | null>("get_active_workspace")
+
+export const installShellIntegration = (shell: "zsh" | "bash") =>
+  invoke<string>("install_shell_integration", { shell })
+
+export const getShellIntegrationStatus = (shell: "zsh" | "bash") =>
+  invoke<ShellIntegrationStatus>("get_shell_integration_status", { shell })
+
+/** Auto-detect shell and install the hook if missing. */
+export const ensureShellHook = () =>
+  invoke<boolean>("ensure_shell_hook")
+
+/** Ensure the `keydock` CLI binary is on PATH. */
+export const ensureKeydockBinary = () =>
+  invoke<boolean>("ensure_keydock_binary")
+
+export const listAuditLogs = () =>
+  invoke<AuditLog[]>("list_audit_logs")
 
 // --- Clipboard ---
 
@@ -116,3 +144,11 @@ export const auditCopy = (params: {
   workspaceId: string | null
   envName: string | null
 }) => invoke<void>("audit_copy", params)
+
+/** Single-IPC copy: writes to system clipboard AND writes audit log. */
+export const copyWithAudit = (params: {
+  text: string
+  targetId: string | null
+  workspaceId: string | null
+  envName: string | null
+}) => invoke<void>("copy_with_audit", params)

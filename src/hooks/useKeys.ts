@@ -1,42 +1,49 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useToast } from "@/hooks/useToast"
+import { useConfirm } from "@/components/ui/confirm-dialog"
 import {
-  createApiKey as createApiKeyApi,
-  deleteApiKey as deleteApiKeyApi,
-  listApiKeys,
-  revealApiKey as revealApiKeyApi,
-  updateApiKey as updateApiKeyApi,
+  createKey as createKeyApi,
+  deleteKey as deleteKeyApi,
+  deactivateActiveWorkspace,
+  listKeys,
+  revealKey as revealKeyApi,
+  setWorkspaceVariable as setWorkspaceVariableApi,
+  updateKey as updateKeyApi,
 } from "@/lib/tauri"
-import { emptyApiKeyForm } from "@/constants"
-import type { ApiKey, ApiKeyForm } from "@/types"
+import { emptyKeyForm } from "@/constants"
+import type { Key, KeyForm } from "@/types"
 
 const REVEAL_AUTO_HIDE_MS = 30000
 
-export interface UseApiKeys {
-  apiKeys: ApiKey[]
+export interface UseKeys {
+  keys: Key[]
   showForm: boolean
-  form: ApiKeyForm
-  setForm: (form: ApiKeyForm) => void
+  form: KeyForm
+  setForm: (form: KeyForm) => void
   submitting: boolean
   editingId: string
-  openForm: (prefill?: Partial<ApiKeyForm>) => void
-  startEdit: (key: ApiKey) => void
+  loading: boolean
+  openForm: (prefill?: Partial<KeyForm>) => void
+  startEdit: (key: Key) => void
   closeForm: () => void
-  save: (secretId: string) => Promise<ApiKey | null>
+  save: (secretId: string) => Promise<Key | null>
   remove: (id: string, name: string) => Promise<void>
-  reveal: (apiKey: ApiKey, workspaceId?: string | null) => Promise<void>
+  activate: (key: Key, workspaceId: string, existingEnvNames: string[]) => Promise<void>
+  deactivate: () => Promise<void>
+  reveal: (key: Key, workspaceId?: string | null) => Promise<string | undefined>
   getRevealed: (id: string) => string | undefined
   refresh: () => Promise<void>
   clearRevealed: () => void
 }
 
-export function useApiKeys(): UseApiKeys {
+export function useKeys(): UseKeys {
   const { show } = useToast()
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
+  const [keys, setKeys] = useState<Key[]>([])
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState<ApiKeyForm>(emptyApiKeyForm)
+  const [form, setForm] = useState<KeyForm>(emptyKeyForm)
   const [editingId, setEditingId] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [loading, setLoading] = useState(true)
   // Plaintext lives in a ref so it never appears in React DevTools state
   // snapshots. revealedVersion is a counter that bumps on every mutation
   // so consumers re-render to read the new value.
@@ -46,20 +53,23 @@ export function useApiKeys(): UseApiKeys {
 
   const refresh = useCallback(async () => {
     try {
-      const list = await listApiKeys(null)
-      setApiKeys(list)
+      setLoading(true)
+      const list = await listKeys(null)
+      setKeys(list)
     } catch (e) {
       show(extractMessage(e), "error")
+    } finally {
+      setLoading(false)
     }
   }, [show])
 
-  const openForm = useCallback((prefill?: Partial<ApiKeyForm>) => {
-    setForm({ ...emptyApiKeyForm, ...prefill })
+  const openForm = useCallback((prefill?: Partial<KeyForm>) => {
+    setForm({ ...emptyKeyForm, ...prefill })
     setEditingId("")
     setShowForm(true)
   }, [])
 
-  const startEdit = useCallback((key: ApiKey) => {
+  const startEdit = useCallback((key: Key) => {
     setForm({
       name: key.name,
       value: "",
@@ -73,18 +83,18 @@ export function useApiKeys(): UseApiKeys {
 
   const closeForm = useCallback(() => {
     setShowForm(false)
-    setForm(emptyApiKeyForm)
+    setForm(emptyKeyForm)
     setEditingId("")
   }, [])
 
   const save = useCallback(
-    async (secretId: string): Promise<ApiKey | null> => {
+    async (secretId: string): Promise<Key | null> => {
       const trimmedName = form.name.trim()
       if (!trimmedName) {
         show("Key name is required", "error")
         return null
       }
-      const dup = apiKeys.some(
+      const dup = keys.some(
         (k) =>
           k.secretId === secretId &&
           k.name.toLowerCase() === trimmedName.toLowerCase() &&
@@ -92,7 +102,7 @@ export function useApiKeys(): UseApiKeys {
       )
       if (dup) {
         show(
-          `An API key with the name "${trimmedName}" already exists in this service.`,
+          `A key with the name "${trimmedName}" already exists in this service.`,
           "error",
         )
         return null
@@ -108,18 +118,18 @@ export function useApiKeys(): UseApiKeys {
           description: null,
         }
         if (editingId) {
-          const updated = await updateApiKeyApi(editingId, payload)
-          show(`Updated API Key: ${updated.name}`, "success")
+          const updated = await updateKeyApi(editingId, payload)
+          show(`Updated key: ${updated.name}`, "success")
           setShowForm(false)
-          setForm(emptyApiKeyForm)
+          setForm(emptyKeyForm)
           setEditingId("")
           await refresh()
           return updated
         }
-        const created = await createApiKeyApi(secretId, payload)
-        show(`Added API Key: ${created.name}`, "success")
+        const created = await createKeyApi(secretId, payload)
+        show(`Added key: ${created.name}`, "success")
         setShowForm(false)
-        setForm(emptyApiKeyForm)
+        setForm(emptyKeyForm)
         await refresh()
         return created
       } catch (e) {
@@ -129,30 +139,31 @@ export function useApiKeys(): UseApiKeys {
         setSubmitting(false)
       }
     },
-    [apiKeys, editingId, form, refresh, show],
+    [keys, editingId, form, refresh, show],
   )
 
   const reveal = useCallback(
-    async (apiKey: ApiKey, workspaceId: string | null = null) => {
-      if (timersRef.current.has(apiKey.id)) {
-        window.clearTimeout(timersRef.current.get(apiKey.id))
-        timersRef.current.delete(apiKey.id)
-        delete revealedRef.current[apiKey.id]
+    async (key: Key, workspaceId: string | null = null) => {
+      if (timersRef.current.has(key.id)) {
+        window.clearTimeout(timersRef.current.get(key.id))
+        timersRef.current.delete(key.id)
+        delete revealedRef.current[key.id]
         setRevealedVersion((v) => v + 1)
         return
       }
       try {
-        const value = await revealApiKeyApi(apiKey.id, workspaceId)
-        revealedRef.current[apiKey.id] = value
+        const value = await revealKeyApi(key.id, workspaceId)
+        revealedRef.current[key.id] = value
         setRevealedVersion((v) => v + 1)
-        show(`Revealed: ${apiKey.name}`, "info")
 
         const handle = window.setTimeout(() => {
-          delete revealedRef.current[apiKey.id]
-          timersRef.current.delete(apiKey.id)
+          delete revealedRef.current[key.id]
+          timersRef.current.delete(key.id)
           setRevealedVersion((v) => v + 1)
         }, REVEAL_AUTO_HIDE_MS)
-        timersRef.current.set(apiKey.id, handle)
+        timersRef.current.set(key.id, handle)
+
+        return value
       } catch (e) {
         show(extractMessage(e), "error")
       }
@@ -160,19 +171,71 @@ export function useApiKeys(): UseApiKeys {
     [show],
   )
 
+  const confirm_ = useConfirm()
+
   const remove = useCallback(
     async (id: string, name: string) => {
-      if (!confirm(`Delete API Key "${name}"?`)) return
+      const ok = await confirm_({
+        title: "Delete Key",
+        message: `Delete key "${name}"? This cannot be undone.`,
+        confirmLabel: "Delete",
+        variant: "danger",
+      })
+      if (!ok) return
       try {
-        await deleteApiKeyApi(id)
-        show(`Deleted API Key: ${name}`, "info")
+        await deleteKeyApi(id)
+        show(`Deleted key: ${name}`, "info")
         await refresh()
       } catch (e) {
         show(extractMessage(e), "error")
       }
     },
-    [refresh, show],
+    [refresh, show, confirm_],
   )
+
+  const activate = useCallback(
+    async (key: Key, workspaceId: string, existingEnvNames: string[]) => {
+      if (!key.envName) {
+        show("This key has no env name", "error")
+        return
+      }
+      if (!workspaceId) {
+        show("No active workspace to add to", "error")
+        return
+      }
+      // Conflict detection: if the env name is already mapped in the
+      // active workspace, ask the user whether to overwrite.
+      if (existingEnvNames.includes(key.envName)) {
+        const ok = await confirm_({
+          title: "Variable already mapped",
+          message: `The env variable "${key.envName}" is already mapped in this workspace. Overwrite?`,
+          confirmLabel: "Overwrite",
+          variant: "danger",
+        })
+        if (!ok) return
+      }
+      try {
+        const result = await setWorkspaceVariableApi(
+          workspaceId,
+          key.envName,
+          key.id,
+        )
+        show(`Mapped ${result.envName} → ${result.keyName ?? key.name}`, "success")
+      } catch (e) {
+        show(extractMessage(e), "error")
+      }
+    },
+    [show, confirm_],
+  )
+
+  const deactivate = useCallback(async () => {
+    try {
+      await deactivateActiveWorkspace()
+      show("KeyDock environment deactivated", "info")
+    } catch (e) {
+      show(extractMessage(e), "error")
+    }
+  }, [show])
 
   const getRevealed = useCallback(
     (id: string) => revealedRef.current[id],
@@ -200,23 +263,23 @@ export function useApiKeys(): UseApiKeys {
     }
   }, [])
 
-  // Initial load.
-  useEffect(() => {
-    refresh()
-  }, [refresh])
+  // Initial load is driven by App.tsx when the vault becomes ready.
 
   return {
-    apiKeys,
+    keys,
     showForm,
     form,
     setForm,
     submitting,
     editingId,
+    loading,
     openForm,
     startEdit,
     closeForm,
     save,
     remove,
+    activate,
+    deactivate,
     reveal,
     getRevealed,
     refresh,

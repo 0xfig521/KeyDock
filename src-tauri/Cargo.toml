@@ -1,5 +1,5 @@
 [package]
-name = "keydock"
+name = "keydock-app"
 version = "0.1.0"
 description = "Developer Secret Workspace for AI Era"
 edition.workspace = true
@@ -16,9 +16,11 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 anyhow.workspace = true
 arboard.workspace = true
+serde_json.workspace = true
 keydock-core = { path = "../crates/keydock-core" }
 serde.workspace = true
 tauri = { version = "2", features = [] }
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-shell = "2"
-
+notify = "7"
+tauri-plugin-updater = "2"

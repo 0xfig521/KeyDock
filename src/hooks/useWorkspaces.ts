@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 import { useToast } from "@/hooks/useToast"
 import {
   createWorkspace as createWorkspaceApi,
@@ -13,6 +13,7 @@ export interface UseWorkspaces {
   formName: string
   setFormName: (name: string) => void
   submitting: boolean
+  loading: boolean
   create: () => Promise<Workspace | null>
   remove: (id: string, name: string) => Promise<void>
   refresh: () => Promise<void>
@@ -23,13 +24,17 @@ export function useWorkspaces(): UseWorkspaces {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [formName, setFormName] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async () => {
     try {
+      setLoading(true)
       const list = await listWorkspaces()
       setWorkspaces(list)
     } catch (e) {
       show(extractMessage(e), "error")
+    } finally {
+      setLoading(false)
     }
   }, [show])
 
@@ -78,15 +83,12 @@ export function useWorkspaces(): UseWorkspaces {
     [refresh, show],
   )
 
-  useEffect(() => {
-    refresh()
-  }, [refresh])
-
   return {
     workspaces,
     formName,
     setFormName: setFormNameNormalized,
     submitting,
+    loading,
     create,
     remove,
     refresh,

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { useToast } from "@/hooks/useToast"
+import { useConfirm } from "@/components/ui/confirm-dialog"
 import {
   createSecret,
   deleteSecret as deleteSecretApi,
@@ -23,6 +24,7 @@ export interface UseSecrets {
   showForm: boolean
   editingId: string
   submitting: boolean
+  loading: boolean
   startCreate: () => void
   startEdit: (secret: Secret) => void
   cancelForm: () => void
@@ -40,13 +42,17 @@ export function useSecrets(): UseSecrets {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async () => {
     try {
+      setLoading(true)
       const list = await listSecrets()
       setSecrets(list)
     } catch (e) {
       show(extractMessage(e), "error")
+    } finally {
+      setLoading(false)
     }
   }, [show])
 
@@ -212,9 +218,17 @@ export function useSecrets(): UseSecrets {
     [refresh, secrets, show],
   )
 
+  const confirm_ = useConfirm()
+
   const remove = useCallback(
     async (id: string, name: string) => {
-      if (!confirm(`Delete service "${name}" and all its keys?`)) return
+      const ok = await confirm_({
+        title: "Delete Service",
+        message: `Delete service "${name}" and all its keys? This cannot be undone.`,
+        confirmLabel: "Delete",
+        variant: "danger",
+      })
+      if (!ok) return
       try {
         await deleteSecretApi(id)
         show(`Deleted service group: ${name}`, "info")
@@ -223,13 +237,12 @@ export function useSecrets(): UseSecrets {
         show(extractMessage(e), "error")
       }
     },
-    [refresh, show],
+    [refresh, show, confirm_],
   )
 
-  // Best-effort initial load if the hook is created after the vault is unlocked.
-  useEffect(() => {
-    refresh()
-  }, [refresh])
+  // Initial load is driven by App.tsx when the vault becomes ready.
+  // We intentionally do NOT call refresh() here to avoid duplicating
+  // the App-level fetch on mount.
 
   return {
     secrets,
@@ -241,6 +254,7 @@ export function useSecrets(): UseSecrets {
     showForm,
     editingId,
     submitting,
+    loading,
     startCreate,
     startEdit,
     cancelForm,

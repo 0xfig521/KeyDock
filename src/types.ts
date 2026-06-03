@@ -1,7 +1,7 @@
 // Domain types — mirror crates/keydock-core/src/models.rs (serde camelCase).
 // Keep these aligned with the Rust structs; extra Rust fields are ignored at runtime.
 
-// --- Secrets & API keys ---
+// --- Secrets & Keys ---
 
 export type SecretCategory =
   | "aI"
@@ -49,7 +49,7 @@ export interface SecretInput {
   notes: string | null
 }
 
-export interface ApiKey {
+export interface Key {
   id: string
   secretId: string
   secretName?: string | null
@@ -57,9 +57,10 @@ export interface ApiKey {
   envName?: string | null
   includeByDefault: boolean
   tags: string[]
+  preview?: string | null
 }
 
-export interface ApiKeyInput {
+export interface KeyInput {
   name: string
   value: string
   envName: string | null
@@ -82,10 +83,24 @@ export interface WorkspaceVariable {
   workspaceId: string
   secretId: string
   secretName?: string | null
-  apiKeyId: string
-  apiKeyName?: string | null
+  keyId: string
+  keyName?: string | null
   envName: string
   enabled: boolean
+}
+
+export interface ActiveWorkspace {
+  id: string
+  name: string
+  sourceType: "workspace" | "key" | string
+  envCount: number
+  envNames: string[]
+}
+
+export interface ShellIntegrationStatus {
+  shell: string
+  installed: boolean
+  rcPath: string
 }
 
 // --- Audit ---
@@ -94,7 +109,9 @@ export interface AuditLog {
   id: string
   action: string
   targetId?: string | null
+  targetName?: string | null
   workspaceId?: string | null
+  workspaceName?: string | null
   envName?: string | null
   createdAt: string
 }
@@ -114,7 +131,7 @@ export interface SecretForm {
   description: string
 }
 
-export interface ApiKeyForm {
+export interface KeyForm {
   name: string
   value: string
   envName: string
@@ -129,5 +146,5 @@ export interface PresetDef {
   modelName: string
   tags: string
   description?: string
-  apiKey: { name: string; env: string }
+  key: { name: string; env: string }
 }

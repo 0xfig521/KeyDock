@@ -1,30 +1,37 @@
 import { useEffect } from "react"
 import type { FormEvent } from "react"
-import type { UseApiKeys } from "@/hooks/useApiKeys"
+import { useTranslation } from "react-i18next"
+import type { UseKeys } from "@/hooks/useKeys"
 import type { UseSecrets } from "@/hooks/useSecrets"
 import { useToast } from "@/hooks/useToast"
+import { useShellIntegration } from "@/hooks/useShellIntegration"
+import { ShellIntegrationCard } from "@/components/dashboard/ShellIntegrationCard"
 import { SecretDetails } from "./SecretDetails"
 import { SecretForm } from "./SecretForm"
 import { SecretList } from "./SecretList"
 import { PresetGrid } from "./PresetGrid"
-import type { PresetDef, Secret } from "@/types"
+import type { ActiveWorkspace, PresetDef, Secret } from "@/types"
 
 interface SecretsTabProps {
   secrets: UseSecrets
-  apiKeys: UseApiKeys
+  keys: UseKeys
   selectedSecretId: string
   selectedWorkspaceId: string
+  activeWorkspace: ActiveWorkspace | null
   onSelectSecret: (id: string) => void
 }
 
 export function SecretsTab({
   secrets,
-  apiKeys,
+  keys,
   selectedSecretId,
   selectedWorkspaceId,
+  activeWorkspace,
   onSelectSecret,
 }: SecretsTabProps) {
+  const { t } = useTranslation()
   const { show } = useToast()
+  const shellIntegration = useShellIntegration()
 
   useEffect(() => {
     if (secrets.secrets.length === 0) return
@@ -44,7 +51,7 @@ export function SecretsTab({
 
   function handleServiceSelect(id: string) {
     secrets.cancelForm()
-    apiKeys.closeForm()
+    keys.closeForm()
     onSelectSecret(id)
   }
 
@@ -63,15 +70,15 @@ export function SecretsTab({
         tags: preset.tags,
         description: preset.description ?? "",
       })
-      apiKeys.setForm({
-        name: preset.apiKey.name,
+      keys.setForm({
+        name: preset.key.name,
         value: "",
-        envName: preset.apiKey.env,
+        envName: preset.key.env,
         includeByDefault: true,
         tags: "",
       })
       show(
-        `"${preset.name}" already exists — form pre-filled, pick a different name.`,
+        t("toast.serviceExists", { name: preset.name }),
         "info",
       )
       return
@@ -80,25 +87,23 @@ export function SecretsTab({
     const created = await secrets.createFromPreset(preset)
     if (!created) return
     onSelectSecret(created.id)
-    apiKeys.openForm({
-      name: preset.apiKey.name,
-      envName: preset.apiKey.env,
+    keys.openForm({
+      name: preset.key.name,
+      envName: preset.key.env,
       includeByDefault: true,
       tags: "",
     })
-    show(
-      `Created ${preset.name}. Paste the API key value to finish.`,
-      "info",
-    )
+    show(t("toast.serviceCreated"), "info")
   }
 
   return (
-    <div className="flex flex-1 min-h-screen">
+    <div className="flex flex-1 min-w-0 min-h-screen overflow-hidden">
       <SecretList
         secrets={secrets.filtered}
-        apiKeys={apiKeys.apiKeys}
+        keys={keys.keys}
         selectedId={selectedSecretId}
         search={secrets.search}
+        loading={secrets.loading}
         onSearchChange={secrets.setSearch}
         onSelect={handleServiceSelect}
         onAdd={() => {
@@ -106,7 +111,7 @@ export function SecretsTab({
         }}
       />
 
-      <div className="flex-grow p-8 overflow-y-auto max-w-4xl">
+      <div className="flex-1 min-w-0 p-8 overflow-y-auto overflow-x-hidden">
         {secrets.showForm ? (
           <SecretForm
             form={secrets.form}
@@ -119,15 +124,23 @@ export function SecretsTab({
         ) : selectedSecret ? (
           <SecretDetails
             secret={selectedSecret}
-            apiKeys={apiKeys}
+            keys={keys}
             selectedWorkspaceId={selectedWorkspaceId}
+            activeWorkspace={activeWorkspace}
             onEdit={() => secrets.startEdit(selectedSecret)}
             onDelete={() =>
               secrets.remove(selectedSecret.id, selectedSecret.name)
             }
           />
         ) : (
-          <PresetGrid onApply={handlePresetApply} />
+          <div className="space-y-8">
+            <PresetGrid onApply={handlePresetApply} />
+            <ShellIntegrationCard
+              status={shellIntegration.status}
+              onInstall={shellIntegration.install}
+              onRefresh={shellIntegration.refresh}
+            />
+          </div>
         )}
       </div>
     </div>

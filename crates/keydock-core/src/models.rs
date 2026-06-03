@@ -81,7 +81,7 @@ pub struct SecretInput {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ApiKey {
+pub struct Key {
     pub id: String,
     pub secret_id: String,
     pub secret_name: Option<String>,
@@ -90,13 +90,14 @@ pub struct ApiKey {
     pub include_by_default: bool,
     pub tags: Vec<String>,
     pub description: Option<String>,
+    pub preview: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ApiKeyInput {
+pub struct KeyInput {
     pub name: String,
     pub value: String,
     pub env_name: Option<String>,
@@ -129,8 +130,8 @@ pub struct WorkspaceVariable {
     pub workspace_id: String,
     pub secret_id: String,
     pub secret_name: Option<String>,
-    pub api_key_id: String,
-    pub api_key_name: Option<String>,
+    pub key_id: String,
+    pub key_name: Option<String>,
     pub env_name: String,
     pub enabled: bool,
     pub required: bool,
@@ -145,7 +146,9 @@ pub struct AuditLog {
     pub id: String,
     pub action: String,
     pub target_id: Option<String>,
+    pub target_name: Option<String>,
     pub workspace_id: Option<String>,
+    pub workspace_name: Option<String>,
     pub env_name: Option<String>,
     pub created_at: String,
 }
@@ -156,5 +159,29 @@ pub struct WorkspaceEnv {
     pub env_name: String,
     pub value: String,
     pub secret_id: String,
-    pub api_key_id: String,
+    pub key_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ActiveWorkspace {
+    pub id: String,
+    pub name: String,
+    #[serde(default = "default_active_source_type")]
+    pub source_type: String,
+    pub env_count: usize,
+    #[serde(default)]
+    pub env_names: Vec<String>,
+}
+
+fn default_active_source_type() -> String {
+    "workspace".into()
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShellIntegrationStatus {
+    pub shell: String,
+    pub installed: bool,
+    pub rc_path: String,
 }

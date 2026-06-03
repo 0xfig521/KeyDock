@@ -131,6 +131,13 @@
   body {
     @apply min-h-screen bg-background text-foreground antialiased;
     background:
+      radial-gradient(circle at 15% 8%, oklch(0.86 0.09 130 / 0.12), transparent 28rem),
+      radial-gradient(circle at 82% 0%, oklch(0.68 0.09 150 / 0.10), transparent 24rem),
+      var(--background);
+  }
+
+  .dark body {
+    background:
       radial-gradient(circle at 15% 8%, oklch(0.86 0.09 130 / 0.18), transparent 28rem),
       radial-gradient(circle at 82% 0%, oklch(0.68 0.09 150 / 0.16), transparent 24rem),
       var(--background);

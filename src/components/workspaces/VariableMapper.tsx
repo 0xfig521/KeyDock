@@ -1,4 +1,6 @@
+import { useMemo } from "react"
 import { PlusIcon } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,58 +12,106 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { ApiKey } from "@/types"
+import {
+  InlineError,
+  pattern,
+  required,
+  type ValidationRule,
+  useFormValidation,
+} from "@/hooks/useFormValidation"
+import type { Key } from "@/types"
 
-interface VariableMapperProps {
-  apiKeys: ApiKey[]
-  mappingApiKey: string
-  mappingEnv: string
-  submitting: boolean
-  onApiKeyChange: (id: string) => void
-  onEnvChange: (env: string) => void
-  onSubmit: (event: React.FormEvent) => void
+function notDuplicate(existing: string[], msg: string): ValidationRule {
+  return {
+    rule(v): boolean {
+      if (typeof v !== "string" || !v) return true
+      return !existing.includes(v)
+    },
+    message: msg,
+  }
 }
 
-/**
- * Inline form for binding an API key to a workspace env variable.
- * `onApiKeyChange` defaults the env name to the key's `envName`
- * (kept in sync at the host so the parent can also access it).
- */
+interface VariableMapperProps {
+  keys: Key[]
+  mappingKey: string
+  mappingEnv: string
+  submitting: boolean
+  onKeyChange: (id: string) => void
+  onEnvChange: (env: string) => void
+  onSubmit: (event: React.FormEvent) => void
+  existingEnvNames: string[]
+}
+
 export function VariableMapper({
-  apiKeys,
-  mappingApiKey,
+  keys,
+  mappingKey,
   mappingEnv,
   submitting,
-  onApiKeyChange,
+  onKeyChange,
   onEnvChange,
   onSubmit,
+  existingEnvNames,
 }: VariableMapperProps) {
+  const { t } = useTranslation()
+
+  const rules = useMemo(
+    () => ({
+      mappingKey: [required(t("variableMapper.validation.selectKey"))] as const,
+      mappingEnv: [
+        required(t("variableMapper.validation.envRequired")),
+        pattern(
+          /^[A-Z_][A-Z0-9_]*$/,
+          t("variableMapper.validation.envFormat"),
+        ),
+        notDuplicate(
+          existingEnvNames,
+          t("variableMapper.validation.envDuplicate"),
+        ),
+      ] as const,
+    }),
+    [existingEnvNames, t],
+  )
+
+  const { errors, validate, validateField, clearFieldError } =
+    useFormValidation(rules)
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (validate({ mappingKey, mappingEnv })) {
+      onSubmit(e)
+    }
+  }
+
   return (
-    <Card className="bg-zinc-900/20 border-zinc-900 p-4">
-      <form onSubmit={onSubmit} className="space-y-3.5 text-xs">
-        <span className="font-semibold text-zinc-300 block">
-          Map Key to Environment Variable
+    <Card className="bg-muted/20 border-border p-4">
+      <form onSubmit={handleSubmit} className="grid gap-4 text-xs">
+        <span className="font-semibold text-card-foreground block">
+          {t("variableMapper.newMapping")}
         </span>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <label className="text-[10px] uppercase font-mono text-zinc-500">
-              API Key Source
+        <div className="grid gap-3">
+          <div className="grid gap-1.5">
+            <label className="text-[10px] uppercase font-mono text-muted-foreground">
+              {t("variableMapper.keySource")}
             </label>
             <Select
-              value={mappingApiKey}
+              value={mappingKey}
               onValueChange={(val) => {
-                const key = apiKeys.find((k) => k.id === val)
-                onApiKeyChange(val)
+                const key = keys.find((k) => k.id === val)
+                onKeyChange(val)
                 onEnvChange(key?.envName ?? "")
+                clearFieldError("mappingKey")
               }}
             >
-              <SelectTrigger className="h-8 text-xs bg-zinc-950/60">
-                <SelectValue placeholder="Choose credential..." />
+              <SelectTrigger
+                className="h-9 w-full min-w-0 text-xs bg-muted/80"
+                onBlur={() => validateField("mappingKey", { mappingKey, mappingEnv })}
+              >
+                <SelectValue placeholder={t("variableMapper.selectKey")} />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-zinc-800">
+              <SelectContent position="popper" className="bg-card border-border">
                 <SelectGroup>
-                  {apiKeys.map((key) => (
+                  {keys.map((key) => (
                     <SelectItem key={key.id} value={key.id} className="text-xs">
                       {key.secretName ?? key.secretId}/{key.name}
                     </SelectItem>
@@ -69,31 +119,36 @@ export function VariableMapper({
                 </SelectGroup>
               </SelectContent>
             </Select>
+            <InlineError error={errors.mappingKey} />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] uppercase font-mono text-zinc-500">
-              Export Environment Name
+          <div className="grid gap-1.5">
+            <label className="text-[10px] uppercase font-mono text-muted-foreground">
+              {t("variableMapper.envVarName")}
             </label>
             <Input
               value={mappingEnv}
-              onChange={(e) => onEnvChange(e.target.value.toUpperCase())}
-              placeholder="e.g. DEEPSEEK_API_KEY"
-              className="h-8 text-xs bg-zinc-950/60 font-mono"
-              required
+              onChange={(e) => {
+                onEnvChange(e.target.value.toUpperCase())
+                clearFieldError("mappingEnv")
+              }}
+              onBlur={() => validateField("mappingEnv", { mappingKey, mappingEnv })}
+              placeholder={t("variableMapper.envPlaceholder")}
+              className="h-9 w-full min-w-0 text-xs bg-muted/80 font-mono"
             />
+            <InlineError error={errors.mappingEnv} />
           </div>
         </div>
 
-        <div className="flex justify-end pt-1">
+        <div className="flex justify-end">
           <Button
             type="submit"
             size="sm"
-            disabled={!mappingApiKey || submitting}
+            disabled={!mappingKey || submitting}
             className="h-8 text-xs bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40"
           >
             <PlusIcon className="size-3 mr-1" />
-            Bind Variable
+            {t("variableMapper.map")}
           </Button>
         </div>
       </form>
