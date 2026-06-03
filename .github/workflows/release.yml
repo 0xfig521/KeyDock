@@ -42,8 +42,6 @@ jobs:
 
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
@@ -67,18 +65,41 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
           # Skip code signing on CI runner
           APPLE_CODESIGN_IDENTITY: ""
+          # Tauri v2 DMG bundler checks CI env; this forces it to proceed
+          TAURI_BUNDLER_DMG_IGNORE_CI: "true"
 
       - name: Collect artifacts
         id: artifacts
         shell: bash
         run: |
-          # Search under both workspace target/ and src-tauri/target/ (Cargo workspace puts output in root target/)
-          DMG_FILE=$(find target src-tauri/target -name "*.dmg" -type f -print 2>/dev/null | head -1)
+          # Search multiple potential Tauri v2 bundle output locations.
+          # With --target universal-apple-darwin, Tauri puts bundles under:
+          #   target/universal-apple-darwin/release/bundle/
+          # In Cargo workspaces the root target/ is used (not src-tauri/target/).
+          # Fall back to a broader recursive search if no match found.
+          for dir in \
+            "target/universal-apple-darwin/release/bundle" \
+            "target/release/bundle" \
+            "src-tauri/target/universal-apple-darwin/release/bundle" \
+            "src-tauri/target/release/bundle" \
+            "target" \
+            "src-tauri/target"; do
+            if [ -d "$dir" ]; then
+              DMG_FILE=$(find "$dir" -maxdepth 4 -name "*.dmg" -type f -print 2>/dev/null | head -1)
+              if [ -n "$DMG_FILE" ]; then
+                echo "Found DMG: $DMG_FILE (in $dir)"
+                break
+              fi
+            fi
+          done
 
           if [ -z "$DMG_FILE" ]; then
-            echo "::error::No DMG found under target/ or src-tauri/target/"
-            echo "::group::Debug: target directory structure"
-            find target src-tauri/target -maxdepth 5 -type d 2>/dev/null | sort | head -80
+            echo "::error::No DMG found under expected paths"
+            echo "::group::Debug: target directory structure (top 100 dirs)"
+            find target src-tauri/target -maxdepth 5 -type d 2>/dev/null | sort | head -100
+            echo "::endgroup::"
+            echo "::group::Debug: broad search for any .dmg files"
+            find . -maxdepth 8 -name "*.dmg" -type f 2>/dev/null || echo "(none found)"
             echo "::endgroup::"
             exit 1
           fi
