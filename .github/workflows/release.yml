@@ -49,7 +49,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: |
-            src-tauri -> src-tauri/target
+            src-tauri
             crates/keydock-core
             crates/keydock-cli
 

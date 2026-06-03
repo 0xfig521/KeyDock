@@ -1,6 +1,6 @@
 [package]
 name = "keydock-app"
-version = "0.3.1"
+version = "0.3.2"
 description = "Developer Secret Workspace for AI Era"
 edition.workspace = true
 license.workspace = true
