@@ -1,4 +1,4 @@
-import { HomeIcon, KeyRoundIcon, LayersIcon, LockIcon, SettingsIcon, ShieldCheckIcon, ShieldIcon } from "lucide-react"
+import { HomeIcon, KeyRoundIcon, LayersIcon, Loader2Icon, LockIcon, RefreshCwIcon, SettingsIcon, ShieldCheckIcon, ShieldIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -13,6 +13,8 @@ interface SidebarProps {
   secretCount: number
   workspaceCount: number
   onLockClick: () => void
+  updateStatus: "idle" | "checking" | "available" | "downloading" | "installing" | "done" | "error"
+  onCheckUpdate: () => void
 }
 
 export function Sidebar({
@@ -21,6 +23,8 @@ export function Sidebar({
   secretCount,
   workspaceCount,
   onLockClick,
+  updateStatus,
+  onCheckUpdate,
 }: SidebarProps) {
   const { t } = useTranslation()
 
@@ -49,12 +53,23 @@ export function Sidebar({
               <span className="relative inline-flex rounded-full size-2 bg-emerald-500"></span>
             </span>
           </div>
-          <Badge
-            variant="secondary"
-            className="text-[9px] py-0 px-1 font-mono uppercase bg-muted text-muted-foreground"
+          <button
+            onClick={onCheckUpdate}
+            disabled={updateStatus === "checking"}
+            title={t("sidebar.checkUpdate")}
+            className={cn(
+              "p-1 rounded-md transition-colors",
+              updateStatus === "available"
+                ? "text-emerald-500 hover:text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-600/10"
+                : "text-muted-foreground/40 hover:text-muted-foreground hover:bg-accent/40",
+            )}
           >
-            v0.1
-          </Badge>
+            {updateStatus === "checking" ? (
+              <Loader2Icon className="size-3 animate-spin" />
+            ) : (
+              <RefreshCwIcon className="size-3" />
+            )}
+          </button>
         </div>
 
         <Separator className="bg-border/60" />

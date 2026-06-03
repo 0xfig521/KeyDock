@@ -7,7 +7,9 @@
     "settings": "Settings",
     "vaultStatus": "Vault Status",
     "vaultDesc": "Your secrets are encrypted in memory. Closing the app clears all keys.",
-    "lockVault": "Lock"
+    "lockVault": "Lock",
+    "checkUpdate": "Check for updates",
+    "version": "v{{version}}"
   },
   "lock": {
     "createTitle": "Create Master Vault",
@@ -55,7 +57,19 @@
     "timeJustNow": "just now",
     "timeMinutesAgo": "{{count}}m ago",
     "timeHoursAgo": "{{count}}h ago",
-    "timeDaysAgo": "{{count}}d ago"
+    "timeDaysAgo": "{{count}}d ago",
+    "expiringKeys": "Expiring Keys",
+    "expiringKeysDesc": "Keys that are expired or nearing expiration",
+    "expired": "Expired",
+    "expiringSoon": "Expiring Soon",
+    "expiringWithin": "Expiring",
+    "noExpiringKeys": "No expiring keys — all keys are healthy",
+    "expiresIn": "Expires in {{days}}d",
+    "expiresToday": "Expires today",
+    "expiredAgo": "Expired {{days}}d ago",
+    "expiredDaysAgo": "Expired {{days}}d ago",
+    "expireCount": "{{count}} keys",
+    "showExpiringKeys": "View in Secrets"
   },
   "secrets": {
     "title": "Secrets",
@@ -70,13 +84,15 @@
     "editService": "Edit Service",
     "deleteService": "Delete Service",
     "baseUrl": "Base URL",
-    "defaultModel": "Default Model",
+    "dashboardUrl": "Dashboard URL",
+    "docsUrl": "Docs URL",
+    "loginUrl": "Login URL",
     "tags": "Tags",
     "keys": "Keys",
     "addKey": "Add Key",
     "noKeys": "No keys yet — add one to get started.",
     "copyBaseUrl": "Copy base URL",
-    "copyModelName": "Copy model name"
+    "openUrl": "Open in browser"
   },
   "secretForm": {
     "editTitle": "Edit Secret",
@@ -86,7 +102,9 @@
     "serviceName": "Service Name",
     "category": "Category",
     "apiBaseUrl": "API Base URL",
-    "defaultModel": "Default Model",
+    "dashboardUrl": "Dashboard URL",
+    "docsUrl": "Docs URL",
+    "loginUrl": "Login URL",
     "tags": "Tags",
     "description": "Description",
     "tagsHint": "(separate with commas)",
@@ -97,7 +115,6 @@
     "create": "Create Secret",
     "namePlaceholder": "e.g. OpenRouter",
     "urlPlaceholder": "e.g. https://api.openrouter.ai/api/v1",
-    "modelPlaceholder": "e.g. gpt-4o",
     "tagsPlaceholder": "e.g. ai, production",
     "descPlaceholder": "What is this service used for?"
   },
@@ -119,7 +136,9 @@
     "envPlaceholder": "e.g. OPENAI_API_KEY",
     "valuePlaceholder": "sk-…",
     "valuePlaceholderEdit": "Leave blank to keep current value",
-    "autoInclude": "Auto-include when exporting to workspaces"
+    "autoInclude": "Auto-include when exporting to workspaces",
+    "expiresAt": "Expires At",
+    "expiresAtPlaceholder": "Optional expiration date"
   },
   "keyForm.validation": {
     "nameRequired": "Key name is required",
@@ -141,7 +160,9 @@
     "setEnvFirst": "Set env name before adding to workspace",
     "noActiveWorkspace": "No active workspace to add to",
     "mappedInWorkspace": "{{envName}} is in workspace",
-    "addToWorkspace": "Add {{envName}} to workspace"
+    "addToWorkspace": "Add {{envName}} to workspace",
+    "expires": "Expires: {{date}}",
+    "expired": "Expired"
   },
   "preset": {
     "welcome": "Welcome",
@@ -246,7 +267,21 @@
     "theme": "Theme",
     "themeDesc": "Switch between dark and light appearance.",
     "dark": "Dark",
-    "light": "Light"
+    "light": "Light",
+    "version": "Version",
+    "versionDesc": "Check for updates and install new versions of KeyDock.",
+    "currentVersion": "Current version",
+    "checkForUpdates": "Check for Updates",
+    "checking": "Checking...",
+    "upToDate": "You're up to date",
+    "updateAvailable": "Update available",
+    "newVersion": "v{{version}} is now available",
+    "installUpdate": "Install Update",
+    "releaseNotes": "Release Notes",
+    "downloading": "Downloading...",
+    "installing": "Installing...",
+    "updateError": "Update check failed. Please try again.",
+    "updateDone": "Update installed. Please restart KeyDock."
   },
   "toast": {
     "serviceExists": "\"{{name}}\" already exists — form pre-filled, pick a different name.",

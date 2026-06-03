@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.5.0 - 2026-06-04
+
+### Features
+- Key expiration support — set expiry dates on API keys and see expiring/expired keys on the dashboard
+- In-app update checker — check for new versions and install updates from the Settings tab
+- Dashboard expiring keys alert — highlights keys expiring within 7 days or already expired
+- Secret metadata fields — add Dashboard URL, Docs URL, and Login URL to service groups
+- Open external links — click URLs to open in your default browser
+
+### Fixes
+- Remove stale `modelName` field from secret model and presets
+
+### Performance
+- Storage refactor with transactional audit logging and N+1 query fixes
+
 ## 0.4.1 - 2026-06-03
 
 ### Fixes

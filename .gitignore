@@ -9,3 +9,5 @@
 
 # Tauri updater signing key (DO NOT COMMIT)
 /.tauri/key.pem
+.omo/
+.engram/

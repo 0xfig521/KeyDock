@@ -1,12 +1,12 @@
-import { CheckIcon, CopyIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react"
+import { ExternalLinkIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react"
 import type { FormEvent } from "react"
 import { useCallback, useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import type { UseKeys } from "@/hooks/useKeys"
-import { useClipboard } from "@/hooks/useClipboard"
 import { useToast } from "@/hooks/useToast"
+import { openExternal } from "@/lib/tauri"
 import { defaultEnvNameForSecret } from "@/constants"
 import { KeyCard } from "./KeyCard"
 import { KeyForm } from "./KeyForm"
@@ -30,7 +30,6 @@ export function SecretDetails({
   onDelete,
 }: SecretDetailsProps) {
   const { t } = useTranslation()
-  const { copiedText, copy } = useClipboard()
   const { show } = useToast()
   const selectedKeys = useMemo(
     () => keys.keys.filter((k) => k.secretId === secret.id),
@@ -135,45 +134,57 @@ export function SecretDetails({
                 {t("secretDetails.baseUrl")}
               </span>
               <code
-                className="font-mono text-[11px] text-card-foreground truncate cursor-pointer hover:text-foreground transition-colors flex items-center gap-1 min-w-0"
-                onClick={() =>
-                  copy({
-                    text: secret.baseUrl!,
-                    label: "Base URL",
-                  })
-                }
-                title={t("secretDetails.copyBaseUrl")}
+                className="font-mono text-[11px] text-card-foreground truncate cursor-pointer hover:text-foreground transition-colors flex items-center gap-1 min-w-0 underline decoration-dotted underline-offset-2 hover:decoration-solid"
+                onClick={() => openExternal(secret.baseUrl!)}
+                title={t("secretDetails.openUrl")}
               >
-                {copiedText === secret.baseUrl ? (
-                  <CheckIcon className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                ) : (
-                  <CopyIcon className="size-3 text-muted-foreground shrink-0" />
-                )}
+                <ExternalLinkIcon className="size-3 text-muted-foreground shrink-0" />
                 {secret.baseUrl}
               </code>
             </div>
           )}
-          {secret.modelName && (
+          {secret.dashboardUrl && (
             <div className="space-y-1">
               <span className="text-[10px] font-mono text-muted-foreground uppercase">
-                {t("secretDetails.defaultModel")}
+                {t("secretDetails.dashboardUrl")}
               </span>
               <code
-                className="text-card-foreground font-mono text-[11px] cursor-pointer hover:text-foreground transition-colors flex items-center gap-1 min-w-0"
-                onClick={() =>
-                  copy({
-                    text: secret.modelName!,
-                    label: "Model name",
-                  })
-                }
-                title={t("secretDetails.copyModelName")}
+                className="font-mono text-[11px] text-card-foreground truncate cursor-pointer hover:text-foreground transition-colors flex items-center gap-1 min-w-0 underline decoration-dotted underline-offset-2 hover:decoration-solid"
+                onClick={() => openExternal(secret.dashboardUrl!)}
+                title={t("secretDetails.openUrl")}
               >
-                {copiedText === secret.modelName ? (
-                  <CheckIcon className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                ) : (
-                  <CopyIcon className="size-3 text-muted-foreground shrink-0" />
-                )}
-                {secret.modelName}
+                <ExternalLinkIcon className="size-3 text-muted-foreground shrink-0" />
+                {secret.dashboardUrl}
+              </code>
+            </div>
+          )}
+          {secret.docsUrl && (
+            <div className="space-y-1">
+              <span className="text-[10px] font-mono text-muted-foreground uppercase">
+                {t("secretDetails.docsUrl")}
+              </span>
+              <code
+                className="font-mono text-[11px] text-card-foreground truncate cursor-pointer hover:text-foreground transition-colors flex items-center gap-1 min-w-0 underline decoration-dotted underline-offset-2 hover:decoration-solid"
+                onClick={() => openExternal(secret.docsUrl!)}
+                title={t("secretDetails.openUrl")}
+              >
+                <ExternalLinkIcon className="size-3 text-muted-foreground shrink-0" />
+                {secret.docsUrl}
+              </code>
+            </div>
+          )}
+          {secret.loginUrl && (
+            <div className="space-y-1">
+              <span className="text-[10px] font-mono text-muted-foreground uppercase">
+                {t("secretDetails.loginUrl")}
+              </span>
+              <code
+                className="font-mono text-[11px] text-card-foreground truncate cursor-pointer hover:text-foreground transition-colors flex items-center gap-1 min-w-0 underline decoration-dotted underline-offset-2 hover:decoration-solid"
+                onClick={() => openExternal(secret.loginUrl!)}
+                title={t("secretDetails.openUrl")}
+              >
+                <ExternalLinkIcon className="size-3 text-muted-foreground shrink-0" />
+                {secret.loginUrl}
               </code>
             </div>
           )}

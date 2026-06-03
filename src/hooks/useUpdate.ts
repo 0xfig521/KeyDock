@@ -23,7 +23,7 @@ export function useUpdate() {
     status: "idle",
   })
 
-  const checkForUpdates = useCallback(async () => {
+  const checkForUpdates = useCallback(async (): Promise<boolean> => {
     setUpdate((prev) => ({ ...prev, status: "checking" }))
     try {
       const result = await check()
@@ -35,15 +35,18 @@ export function useUpdate() {
           downloading: false,
           status: "available",
         })
+        return true
       } else {
         setUpdate({
           available: false,
           downloading: false,
           status: "idle",
         })
+        return false
       }
     } catch {
       setUpdate((prev) => ({ ...prev, status: "idle" }))
+      return false
     }
   }, [])
 

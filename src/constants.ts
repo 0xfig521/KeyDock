@@ -6,9 +6,11 @@ export const emptySecretForm = {
   name: "",
   category: "aI" as SecretCategory,
   baseUrl: "",
-  modelName: "",
   tags: "",
   description: "",
+  dashboardUrl: "",
+  docsUrl: "",
+  loginUrl: "",
 }
 
 export const emptyKeyForm = {
@@ -17,6 +19,7 @@ export const emptyKeyForm = {
   envName: "",
   includeByDefault: true,
   tags: "",
+  expiresAt: "",
 }
 
 // --- Quick-start presets (Dashboard) ---
@@ -26,7 +29,6 @@ export const presets: PresetDef[] = [
     name: "OpenRouter",
     category: "aI",
     baseUrl: "https://openrouter.ai/api/v1",
-    modelName: "anthropic/claude-3.5-sonnet",
     tags: "ai,llm",
     description: "Managed OpenRouter secrets",
     key: { name: "default", env: "OPENAI_API_KEY" },
@@ -35,7 +37,6 @@ export const presets: PresetDef[] = [
     name: "DeepSeek",
     category: "aI",
     baseUrl: "https://api.deepseek.com/v1",
-    modelName: "deepseek-chat",
     tags: "ai,llm",
     description: "Managed DeepSeek secrets",
     key: { name: "default", env: "DEEPSEEK_API_KEY" },
@@ -44,7 +45,6 @@ export const presets: PresetDef[] = [
     name: "Cloudflare",
     category: "cloud",
     baseUrl: "https://api.cloudflare.com/client/v4",
-    modelName: "",
     tags: "cloud,cdn",
     description: "Managed Cloudflare secrets",
     key: { name: "default", env: "CLOUDFLARE_API_TOKEN" },
@@ -53,7 +53,6 @@ export const presets: PresetDef[] = [
     name: "Tavily",
     category: "search",
     baseUrl: "https://api.tavily.com",
-    modelName: "",
     tags: "search",
     description: "Managed Tavily secrets",
     key: { name: "default", env: "TAVILY_API_KEY" },

@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build-macos:
-    name: Build macOS (universal)
+    name: Build macOS (Apple Silicon)
     runs-on: macos-latest
     permissions:
       contents: write
@@ -42,6 +42,8 @@ jobs:
 
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: aarch64-apple-darwin
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
@@ -50,16 +52,13 @@ jobs:
             src-tauri
             crates/keydock-core
             crates/keydock-cli
-
-      # Cache restore may overwrite rustup state, re-ensure targets
-      - name: Ensure Rust targets
-        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+          key: aarch64-apple-darwin
 
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build universal macOS DMG
-        run: bun run tauri build --target universal-apple-darwin --bundles dmg
+      - name: Build macOS DMG
+        run: bun run tauri build --target aarch64-apple-darwin --bundles dmg
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
@@ -72,15 +71,13 @@ jobs:
         id: artifacts
         shell: bash
         run: |
-          # Search multiple potential Tauri v2 bundle output locations.
-          # With --target universal-apple-darwin, Tauri puts bundles under:
-          #   target/universal-apple-darwin/release/bundle/
+          # With --target, Tauri usually puts bundles under:
+          #   target/<target>/release/bundle/
           # In Cargo workspaces the root target/ is used (not src-tauri/target/).
-          # Fall back to a broader recursive search if no match found.
           for dir in \
-            "target/universal-apple-darwin/release/bundle" \
+            "target/aarch64-apple-darwin/release/bundle" \
             "target/release/bundle" \
-            "src-tauri/target/universal-apple-darwin/release/bundle" \
+            "src-tauri/target/aarch64-apple-darwin/release/bundle" \
             "src-tauri/target/release/bundle" \
             "target" \
             "src-tauri/target"; do
@@ -109,12 +106,12 @@ jobs:
           SIG_FILE="${DMG_FILE}.sig"
 
           # Rename to a predictable name for the release asset
-          mv "$DMG_FILE" "$DMG_DIR/KeyDock-universal.dmg"
+          mv "$DMG_FILE" "$DMG_DIR/KeyDock-aarch64.dmg"
           if [ -f "$SIG_FILE" ]; then
-            mv "$SIG_FILE" "$DMG_DIR/KeyDock-universal.dmg.sig"
+            mv "$SIG_FILE" "$DMG_DIR/KeyDock-aarch64.dmg.sig"
           fi
 
-          echo "DMG=$DMG_DIR/KeyDock-universal.dmg" >> "$GITHUB_OUTPUT"
+          echo "DMG=$DMG_DIR/KeyDock-aarch64.dmg" >> "$GITHUB_OUTPUT"
           echo "DMG_DIR=$DMG_DIR" >> "$GITHUB_OUTPUT"
 
       - name: Generate update.json
@@ -122,19 +119,18 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           DMG_DIR="${{ steps.artifacts.outputs.DMG_DIR }}"
-          SIG=$(cat "$DMG_DIR/KeyDock-universal.dmg.sig" 2>/dev/null || echo "")
+          SIG=$(cat "$DMG_DIR/KeyDock-aarch64.dmg.sig" 2>/dev/null || echo "")
 
           jq -n \
             --arg v "$VERSION" \
             --arg date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --arg sig "$SIG" \
-            --arg url "https://github.com/0xfig521/KeyDock/releases/download/${{ github.ref_name }}/KeyDock-universal.dmg" \
+            --arg url "https://github.com/0xfig521/KeyDock/releases/download/${{ github.ref_name }}/KeyDock-aarch64.dmg" \
             '{
               version: $v,
               pub_date: $date,
               platforms: {
-                "darwin-aarch64": { signature: $sig, url: $url },
-                "darwin-x86_64": { signature: $sig, url: $url }
+                "darwin-aarch64": { signature: $sig, url: $url }
               }
             }' > update.json
 

@@ -15,8 +15,8 @@ impl AppStore {
         let tags_json = serde_json::to_string(&input.tags)?;
         with_tx(&self.conn, |conn| {
             conn.execute(
-                "INSERT INTO keys (id, secret_id, name, encrypted_value, env_name, include_by_default, tags_json, description, created_at, updated_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?9)",
+                "INSERT INTO keys (id, secret_id, name, encrypted_value, env_name, include_by_default, tags_json, description, expires_at, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10)",
                 params![
                     &id,
                     &secret.id,
@@ -26,6 +26,7 @@ impl AppStore {
                     bool_to_i64(input.include_by_default),
                     &tags_json,
                     &input.description,
+                    &input.expires_at,
                     &now_ts,
                 ],
             )?;
@@ -108,7 +109,7 @@ impl AppStore {
         with_tx(&self.conn, |conn| {
             if input.value.is_empty() {
                 conn.execute(
-                    "UPDATE keys SET name = ?2, env_name = ?3, include_by_default = ?4, tags_json = ?5, description = ?6, updated_at = ?7 WHERE id = ?1",
+                    "UPDATE keys SET name = ?2, env_name = ?3, include_by_default = ?4, tags_json = ?5, description = ?6, expires_at = ?7, updated_at = ?8 WHERE id = ?1",
                     params![
                         &key_id,
                         &input.name,
@@ -116,13 +117,14 @@ impl AppStore {
                         bool_to_i64(input.include_by_default),
                         &tags_json,
                         &input.description,
+                        &input.expires_at,
                         &now_ts,
                     ],
                 )?;
             } else {
                 let encrypted_value = encrypt_secret(&self.master_key, &input.value)?;
                 conn.execute(
-                    "UPDATE keys SET name = ?2, encrypted_value = ?3, env_name = ?4, include_by_default = ?5, tags_json = ?6, description = ?7, updated_at = ?8 WHERE id = ?1",
+                    "UPDATE keys SET name = ?2, encrypted_value = ?3, env_name = ?4, include_by_default = ?5, tags_json = ?6, description = ?7, expires_at = ?8, updated_at = ?9 WHERE id = ?1",
                     params![
                         &key_id,
                         &input.name,
@@ -131,6 +133,7 @@ impl AppStore {
                         bool_to_i64(input.include_by_default),
                         &tags_json,
                         &input.description,
+                        &input.expires_at,
                         &now_ts,
                     ],
                 )?;
@@ -153,7 +156,7 @@ impl AppStore {
 }
 
 fn row_to_key(row: &rusqlite::Row<'_>) -> rusqlite::Result<Key> {
-    let tags_json: String = row.get(6)?;
+    let tags_json: String = row.get(7)?;
     Ok(Key {
         id: row.get(0)?,
         secret_id: row.get(1)?,
@@ -161,10 +164,11 @@ fn row_to_key(row: &rusqlite::Row<'_>) -> rusqlite::Result<Key> {
         name: row.get(3)?,
         env_name: row.get(4)?,
         include_by_default: row.get::<_, i64>(5)? == 1,
+        expires_at: row.get(6)?,
         tags: serde_json::from_str(&tags_json).unwrap_or_default(),
-        description: row.get(7)?,
+        description: row.get(8)?,
         preview: None,
-        created_at: row.get(8)?,
-        updated_at: row.get(9)?,
+        created_at: row.get(9)?,
+        updated_at: row.get(10)?,
     })
 }

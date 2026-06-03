@@ -78,9 +78,11 @@ export function useSecrets(): UseSecrets {
       name: secret.name,
       category: secret.category,
       baseUrl: secret.baseUrl ?? "",
-      modelName: secret.modelName ?? "",
       tags: (secret.tags ?? []).join(", "),
       description: secret.description ?? "",
+      dashboardUrl: secret.dashboardUrl ?? "",
+      docsUrl: secret.docsUrl ?? "",
+      loginUrl: secret.loginUrl ?? "",
     })
     setShowForm(true)
   }, [])
@@ -96,15 +98,11 @@ export function useSecrets(): UseSecrets {
       name: f.name.trim(),
       category: f.category as SecretCategory,
       baseUrl: f.baseUrl.trim() || null,
-      modelName: f.modelName.trim() || null,
       tags: splitTags(f.tags),
       description: f.description.trim() || null,
-      // Reference fields are not collected by the desktop form. The
-      // Rust struct still accepts them so the CLI can set them, but
-      // every round-trip from the desktop clears them.
-      dashboardUrl: null,
-      docsUrl: null,
-      loginUrl: null,
+      dashboardUrl: f.dashboardUrl.trim() || null,
+      docsUrl: f.docsUrl.trim() || null,
+      loginUrl: f.loginUrl.trim() || null,
       notes: null,
     }),
     [],
@@ -190,7 +188,6 @@ export function useSecrets(): UseSecrets {
           name: preset.name,
           category: preset.category,
           baseUrl: preset.baseUrl,
-          modelName: preset.modelName || null,
           tags: splitTags(preset.tags),
           description: preset.description ?? null,
           dashboardUrl: null,

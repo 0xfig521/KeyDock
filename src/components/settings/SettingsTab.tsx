@@ -1,10 +1,23 @@
 import { useTranslation } from "react-i18next"
 import { useTheme } from "@/hooks/useTheme"
+import type { UpdateInfo } from "@/hooks/useUpdate"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import i18n from "@/i18n/config"
 
-export function SettingsTab() {
+interface SettingsTabProps {
+  update: UpdateInfo
+  currentVersion: string
+  onCheckUpdate: () => void
+  onInstallUpdate: () => void
+}
+
+export function SettingsTab({
+  update,
+  currentVersion,
+  onCheckUpdate,
+  onInstallUpdate,
+}: SettingsTabProps) {
   const { t } = useTranslation()
   const { theme, setTheme } = useTheme()
 
@@ -95,6 +108,91 @@ export function SettingsTab() {
                 {t("settings.chinese")}
               </span>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-4">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold text-foreground">
+            {t("settings.version")}
+          </CardTitle>
+          <CardDescription className="text-xs text-muted-foreground">
+            {t("settings.versionDesc")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{t("settings.currentVersion")}</span>
+                <span className="text-xs font-mono font-medium text-foreground">
+                  v{currentVersion || "0.4.1"}
+                </span>
+              </div>
+
+              {update.status === "idle" && (
+                <button
+                  onClick={onCheckUpdate}
+                  className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                >
+                  {t("settings.checkForUpdates")}
+                </button>
+              )}
+
+              {update.status === "checking" && (
+                <span className="text-xs text-muted-foreground">{t("settings.checking")}</span>
+              )}
+
+              {update.status === "available" && update.version && (
+                <button
+                  onClick={onInstallUpdate}
+                  className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                >
+                  {t("settings.installUpdate")}
+                </button>
+              )}
+
+              {update.status === "downloading" && (
+                <span className="text-xs text-muted-foreground">
+                  {t("settings.downloading")}
+                  {update.progress !== undefined && ` ${Math.round(update.progress * 100)}%`}
+                </span>
+              )}
+
+              {update.status === "installing" && (
+                <span className="text-xs text-muted-foreground">{t("settings.installing")}</span>
+              )}
+
+              {update.status === "done" && (
+                <span className="text-xs text-emerald-600 dark:text-emerald-400">{t("settings.updateDone")}</span>
+              )}
+
+              {update.status === "error" && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-red-500">{t("settings.updateError")}</span>
+                  <button
+                    onClick={onCheckUpdate}
+                    className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                  >
+                    {t("settings.checkForUpdates")}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {update.status === "available" && (
+              <div className="rounded-md border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-3">
+                <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300 mb-1">
+                  {t("settings.newVersion", { version: update.version })}
+                </p>
+                {update.body && (
+                  <pre className="text-[10px] text-emerald-600 dark:text-emerald-400 whitespace-pre-wrap font-mono leading-relaxed">
+                    {update.body}
+                  </pre>
+                )}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

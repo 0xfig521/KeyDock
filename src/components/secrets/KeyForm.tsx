@@ -1,9 +1,12 @@
-import type { FormEvent } from "react"
-import { XIcon } from "lucide-react"
+import { type FormEvent, useState, useRef, useEffect } from "react"
+import { CalendarIcon, XIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 import {
   InlineError,
   minLength,
@@ -31,6 +34,24 @@ export function KeyForm({
   editingKey,
 }: KeyFormProps) {
   const { t } = useTranslation()
+  const [expiresAtOpen, setExpiresAtOpen] = useState(false)
+  const calendarRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!expiresAtOpen) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (calendarRef.current && !calendarRef.current.contains(e.target as Node)) {
+        setExpiresAtOpen(false)
+      }
+    }
+    const timer = setTimeout(() => {
+      document.addEventListener("mousedown", handleClickOutside)
+    }, 0)
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [expiresAtOpen])
 
   const KEY_BASE_RULES = {
     name: [required(t("keyForm.validation.nameRequired")), minLength(1, t("keyForm.validation.nameEmpty"))],
@@ -63,7 +84,7 @@ export function KeyForm({
   }
 
   return (
-    <Card className="bg-muted/40 border-border p-4 animate-in fade-in slide-in-from-top-3">
+    <Card className="bg-muted/40 border-border p-4 animate-in fade-in slide-in-from-top-3 overflow-visible">
       <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
         <div className="flex items-center justify-between pb-2 border-b border-border">
           <span className="font-semibold text-card-foreground">
@@ -132,6 +153,50 @@ export function KeyForm({
             className="h-8 text-xs bg-muted/80 font-mono"
           />
           <InlineError error={errors.value} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-[10px] uppercase font-mono text-muted-foreground">
+              {t("keyForm.expiresAt")}
+            </label>
+            <div className="relative">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setExpiresAtOpen(!expiresAtOpen)}
+                className={cn(
+                  "h-8 w-full justify-start text-left text-xs font-normal bg-muted/80 border-border",
+                  !form.expiresAt && "text-muted-foreground",
+                )}
+              >
+                <CalendarIcon className="mr-1 size-3.5 shrink-0" />
+                <span className="truncate">
+                  {form.expiresAt
+                    ? format(new Date(form.expiresAt), "yyyy-MM-dd")
+                    : t("keyForm.expiresAtPlaceholder")}
+                </span>
+              </Button>
+              {expiresAtOpen && (
+                <div
+                  ref={calendarRef}
+                  className="absolute z-50 top-full left-0 mt-1 rounded-lg border border-border bg-popover shadow-md"
+                >
+                  <Calendar
+                    mode="single"
+                    selected={form.expiresAt ? new Date(form.expiresAt) : undefined}
+                    onSelect={(date) => {
+                      onChange({
+                        ...form,
+                        expiresAt: date ? format(date, "yyyy-MM-dd") : "",
+                      })
+                      setExpiresAtOpen(false)
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 pt-1.5">

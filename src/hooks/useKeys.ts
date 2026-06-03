@@ -76,6 +76,7 @@ export function useKeys(): UseKeys {
       envName: key.envName ?? "",
       includeByDefault: key.includeByDefault,
       tags: (key.tags ?? []).join(", "),
+      expiresAt: key.expiresAt ?? "",
     })
     setEditingId(key.id)
     setShowForm(true)
@@ -116,6 +117,7 @@ export function useKeys(): UseKeys {
           includeByDefault: form.includeByDefault,
           tags: [],
           description: null,
+          expiresAt: form.expiresAt.trim() || null,
         }
         if (editingId) {
           const updated = await updateKeyApi(editingId, payload)

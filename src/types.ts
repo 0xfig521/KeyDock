@@ -27,7 +27,6 @@ export interface Secret {
   name: string
   category: SecretCategory
   baseUrl?: string | null
-  modelName?: string | null
   tags: string[]
   description?: string | null
   dashboardUrl?: string | null
@@ -40,7 +39,6 @@ export interface SecretInput {
   name: string
   category: SecretCategory
   baseUrl: string | null
-  modelName: string | null
   tags: string[]
   description: string | null
   dashboardUrl: string | null
@@ -58,6 +56,7 @@ export interface Key {
   includeByDefault: boolean
   tags: string[]
   preview?: string | null
+  expiresAt?: string | null
 }
 
 export interface KeyInput {
@@ -67,6 +66,7 @@ export interface KeyInput {
   includeByDefault: boolean
   tags: string[]
   description: string | null
+  expiresAt: string | null
 }
 
 // --- Workspaces ---
@@ -126,9 +126,11 @@ export interface SecretForm {
   name: string
   category: SecretCategory
   baseUrl: string
-  modelName: string
   tags: string
   description: string
+  dashboardUrl: string
+  docsUrl: string
+  loginUrl: string
 }
 
 export interface KeyForm {
@@ -137,13 +139,13 @@ export interface KeyForm {
   envName: string
   includeByDefault: boolean
   tags: string
+  expiresAt: string
 }
 
 export interface PresetDef {
   name: string
   category: SecretCategory
   baseUrl: string
-  modelName: string
   tags: string
   description?: string
   key: { name: string; env: string }

@@ -7,7 +7,9 @@
     "settings": "设置",
     "vaultStatus": "保险库状态",
     "vaultDesc": "您的密钥已在内存中加密。关闭应用会清空所有密钥。",
-    "lockVault": "锁定"
+    "lockVault": "锁定",
+    "checkUpdate": "检查更新",
+    "version": "v{{version}}"
   },
   "lock": {
     "createTitle": "创建主保险库",
@@ -55,7 +57,19 @@
     "timeJustNow": "刚刚",
     "timeMinutesAgo": "{{count}} 分钟前",
     "timeHoursAgo": "{{count}} 小时前",
-    "timeDaysAgo": "{{count}} 天前"
+    "timeDaysAgo": "{{count}} 天前",
+    "expiringKeys": "即将过期的密钥",
+    "expiringKeysDesc": "已过期或即将过期的密钥",
+    "expired": "已过期",
+    "expiringSoon": "即将过期",
+    "expiringWithin": "即将过期",
+    "noExpiringKeys": "没有即将过期的密钥 — 所有密钥状态良好",
+    "expiresIn": "还剩 {{days}} 天",
+    "expiresToday": "今天过期",
+    "expiredAgo": "已过期 {{days}} 天",
+    "expiredDaysAgo": "已过期 {{days}} 天",
+    "expireCount": "{{count}} 个密钥",
+    "showExpiringKeys": "在密钥中查看"
   },
   "secrets": {
     "title": "密钥",
@@ -70,13 +84,15 @@
     "editService": "编辑服务",
     "deleteService": "删除服务",
     "baseUrl": "基础 URL",
-    "defaultModel": "默认模型",
+    "dashboardUrl": "仪表盘 URL",
+    "docsUrl": "文档 URL",
+    "loginUrl": "登录 URL",
     "tags": "标签",
     "keys": "密钥",
     "addKey": "添加密钥",
     "noKeys": "暂无密钥 — 添加一个开始使用。",
     "copyBaseUrl": "复制基础 URL",
-    "copyModelName": "复制模型名称"
+    "openUrl": "在浏览器中打开"
   },
   "secretForm": {
     "editTitle": "编辑密钥",
@@ -86,7 +102,9 @@
     "serviceName": "服务名称",
     "category": "分类",
     "apiBaseUrl": "API 基础 URL",
-    "defaultModel": "默认模型",
+    "dashboardUrl": "仪表盘 URL",
+    "docsUrl": "文档 URL",
+    "loginUrl": "登录 URL",
     "tags": "标签",
     "description": "描述",
     "tagsHint": "（用逗号分隔）",
@@ -97,7 +115,6 @@
     "create": "创建密钥",
     "namePlaceholder": "例如：OpenRouter",
     "urlPlaceholder": "例如：https://api.openrouter.ai/api/v1",
-    "modelPlaceholder": "例如：gpt-4o",
     "tagsPlaceholder": "例如：ai, production",
     "descPlaceholder": "这个服务的用途是什么？"
   },
@@ -119,7 +136,9 @@
     "envPlaceholder": "例如：OPENAI_API_KEY",
     "valuePlaceholder": "sk-…",
     "valuePlaceholderEdit": "留空以保留当前值",
-    "autoInclude": "导出到工作区时自动包含"
+    "autoInclude": "导出到工作区时自动包含",
+    "expiresAt": "过期时间",
+    "expiresAtPlaceholder": "选填，设置过期时间"
   },
   "keyForm.validation": {
     "nameRequired": "密钥名称为必填项",
@@ -141,7 +160,9 @@
     "setEnvFirst": "请先设置环境变量名",
     "noActiveWorkspace": "没有活跃的工作区可用于添加",
     "mappedInWorkspace": "{{envName}} 已在工作区中",
-    "addToWorkspace": "添加 {{envName}} 到工作区"
+    "addToWorkspace": "添加 {{envName}} 到工作区",
+    "expires": "过期: {{date}}",
+    "expired": "已过期"
   },
   "preset": {
     "welcome": "欢迎",
@@ -246,7 +267,21 @@
     "theme": "主题",
     "themeDesc": "切换深色与浅色外观。",
     "dark": "深色",
-    "light": "浅色"
+    "light": "浅色",
+    "version": "版本",
+    "versionDesc": "检查更新并安装 KeyDock 的新版本。",
+    "currentVersion": "当前版本",
+    "checkForUpdates": "检查更新",
+    "checking": "正在检查...",
+    "upToDate": "已是最新版本",
+    "updateAvailable": "发现新版本",
+    "newVersion": "v{{version}} 现已可用",
+    "installUpdate": "安装更新",
+    "releaseNotes": "更新日志",
+    "downloading": "正在下载...",
+    "installing": "正在安装...",
+    "updateError": "更新检查失败，请重试。",
+    "updateDone": "更新已安装，请重启 KeyDock。"
   },
   "toast": {
     "serviceExists": "\"{{name}}\" 已存在 — 表单已预填，请使用不同的名称。",

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   ArrowRightIcon,
   KeyRoundIcon,
@@ -9,11 +9,13 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ChevronRightIcon,
+  AlertTriangleIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import type {
+  Key,
   ActiveWorkspace,
   AuditLog,
 } from "@/types"
@@ -22,6 +24,8 @@ import type { UseKeys } from "@/hooks/useKeys"
 import type { UseWorkspaces } from "@/hooks/useWorkspaces"
 import type { UseAudit } from "@/hooks/useAudit"
 import type { SidebarTab } from "@/components/layout/Sidebar"
+
+const EXPIRING_SOON_DAYS = 7
 
 interface DashboardTabProps {
   secrets: UseSecrets
@@ -72,6 +76,28 @@ export function DashboardTab({
   useEffect(() => {
     void audit.refresh()
   }, [audit.refresh])
+
+  const expiringEntries = useMemo(() => {
+    const now = Date.now()
+    return keys.keys
+      .filter((k): k is Key & { expiresAt: string } => !!k.expiresAt)
+      .map((k) => {
+        const expiry = new Date(k.expiresAt).getTime()
+        const diffMs = expiry - now
+        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+        let status: "expired" | "expiring-soon" | "healthy"
+        if (diffDays <= 0) {
+          status = "expired"
+        } else if (diffDays <= EXPIRING_SOON_DAYS) {
+          status = "expiring-soon"
+        } else {
+          status = "healthy"
+        }
+        return { ...k, diffDays, status }
+      })
+      .filter((k) => k.status !== "healthy")
+      .sort((a, b) => a.diffDays - b.diffDays)
+  }, [keys.keys])
 
   useEffect(() => {
     setRecentLogs(audit.logs.slice(0, 5))
@@ -237,6 +263,109 @@ export function DashboardTab({
           </button>
         ))}
       </div>
+
+      {/* Expiring Keys */}
+      {expiringEntries.length > 0 && (
+        <div className="rounded-xl border border-border bg-card/50 overflow-hidden">
+          <div className="p-5">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <AlertTriangleIcon className="size-4 text-amber-600 dark:text-amber-400" />
+                <h2 className="text-sm font-semibold text-foreground">
+                  {t("dashboard.expiringKeys")}
+                </h2>
+              </div>
+              <Badge
+                variant="secondary"
+                className="text-[10px] font-mono bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-500/20"
+              >
+                {t("dashboard.expireCount", { count: expiringEntries.length })}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              {t("dashboard.expiringKeysDesc")}
+            </p>
+            <div className="space-y-1">
+              {expiringEntries.slice(0, 8).map((entry) => {
+                const label =
+                  entry.status === "expired"
+                    ? t("dashboard.expiredDaysAgo", { days: Math.abs(entry.diffDays) })
+                    : entry.diffDays === 0
+                      ? t("dashboard.expiresToday")
+                      : t("dashboard.expiresIn", { days: entry.diffDays })
+                const badgeClass =
+                  entry.status === "expired"
+                    ? "bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-300 dark:border-red-500/20"
+                    : "bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-500/20"
+                const badgeLabel =
+                  entry.status === "expired"
+                    ? t("dashboard.expired")
+                    : t("dashboard.expiringSoon")
+                return (
+                  <div
+                    key={entry.id}
+                    className="flex items-center justify-between py-1.5 px-3 rounded-lg hover:bg-accent/40 transition-colors cursor-pointer"
+                    onClick={() => onSelectTab("secrets")}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div
+                        className={`size-2 rounded-full shrink-0 ${
+                          entry.status === "expired"
+                            ? "bg-red-500"
+                            : "bg-amber-500"
+                        }`}
+                      />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-foreground truncate">
+                            {entry.name}
+                          </span>
+                          {entry.secretName && (
+                            <span className="text-[10px] text-muted-foreground/60 truncate">
+                              · {entry.secretName}
+                            </span>
+                          )}
+                        </div>
+                        {entry.envName && (
+                          <code className="text-[10px] font-mono text-muted-foreground/70">
+                            {entry.envName}
+                          </code>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-3">
+                      <Badge
+                        variant="secondary"
+                        className={`text-[9px] font-mono py-0 px-1.5 uppercase ${badgeClass}`}
+                      >
+                        {badgeLabel}
+                      </Badge>
+                      <span
+                        className={`text-[10px] font-mono ${
+                          entry.status === "expired"
+                            ? "text-red-500/80"
+                            : "text-muted-foreground/70"
+                        }`}
+                      >
+                        {label}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            {expiringEntries.length > 8 && (
+              <button
+                onClick={() => onSelectTab("secrets")}
+                className="w-full mt-2 flex items-center justify-center gap-1 text-[10px] text-muted-foreground/70 hover:text-foreground transition-colors py-1"
+              >
+                {t("dashboard.showExpiringKeys")}
+                <ArrowRightIcon className="size-3" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Quick Actions & Recent Activity */}
       <div className="grid grid-cols-2 gap-5">

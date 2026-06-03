@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core"
+import { openUrl } from "@tauri-apps/plugin-opener"
 import type {
   Key,
   KeyInput,
@@ -152,3 +153,6 @@ export const copyWithAudit = (params: {
   workspaceId: string | null
   envName: string | null
 }) => invoke<void>("copy_with_audit", params)
+
+/** Open a URL in the system default browser. */
+export const openExternal = (url: string) => openUrl(url)

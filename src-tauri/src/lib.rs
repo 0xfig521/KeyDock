@@ -438,6 +438,7 @@ fn spawn_active_workspace_watcher(app: tauri::AppHandle) {
 pub fn run() {
     let db_path = default_database_path().expect("resolve KeyDock database path");
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState {
             db_path,

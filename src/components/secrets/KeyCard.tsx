@@ -53,10 +53,10 @@ function KeyCardImpl({
 
   return (
     <Card className="bg-muted/20 border-border hover:border-border transition-colors">
-      <CardContent className="p-3 flex flex-col gap-2 text-xs">
-        <div className="min-w-0 flex-1 space-y-1">
+      <CardContent className="p-3 grid gap-3 text-xs sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+        <div className="min-w-0 flex-1 space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-foreground">{key_.name}</span>
+            <span className="font-semibold text-foreground truncate">{key_.name}</span>
             {key_.includeByDefault && (
               <Badge
                 variant="secondary"
@@ -73,10 +73,10 @@ function KeyCardImpl({
             </Badge>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-mono text-muted-foreground">{t("keyCard.envLabel")}</span>
+          <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-1.5">
+            <span className="text-[10px] font-mono text-muted-foreground shrink-0">{t("keyCard.envLabel")}</span>
             <code
-              className="text-[11px] text-muted-foreground font-mono bg-muted/80 px-1.5 py-0.5 rounded border border-border/60 cursor-pointer hover:text-foreground hover:bg-muted/90 transition-colors"
+              className="w-fit max-w-full text-[11px] text-muted-foreground font-mono bg-muted/80 px-1.5 py-0.5 rounded border border-border/60 cursor-pointer hover:text-foreground hover:bg-muted/90 transition-colors"
               onClick={(e) => {
                 e.stopPropagation()
                 if (key_.envName) {
@@ -91,18 +91,34 @@ function KeyCardImpl({
               }}
               title={t("keyCard.copyEnvName")}
             >
-              {key_.envName || "—"}
+              <span className="truncate">{key_.envName || "—"}</span>
             </code>
           </div>
 
-          <div className="flex items-center gap-1">
+          {key_.expiresAt && (
+            <div className="flex items-center gap-1">
+              <span
+                className={
+                  new Date(key_.expiresAt) < new Date()
+                    ? "text-[9px] font-mono text-rose-500 dark:text-rose-400"
+                    : "text-[9px] font-mono text-amber-600 dark:text-amber-400"
+                }
+              >
+                {new Date(key_.expiresAt) < new Date()
+                  ? t("keyCard.expired")
+                  : t("keyCard.expires", { date: key_.expiresAt })}
+              </span>
+            </div>
+          )}
+
+          <div className="flex items-center gap-1 min-w-0">
             {revealed && copiedText === revealed ? (
               <CheckIcon className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
             ) : (
               <CodeIcon className="size-3.5 text-muted-foreground/70 shrink-0" />
             )}
             <code
-              className="font-mono text-[10px] text-muted-foreground truncate select-all cursor-pointer hover:text-foreground transition-colors flex items-center gap-1"
+              className="font-mono text-[10px] text-muted-foreground truncate select-all cursor-pointer hover:text-foreground transition-colors flex items-center gap-1 min-w-0"
               onClick={handleCopy}
               title={t("keyCard.clickToCopy")}
             >
@@ -111,12 +127,12 @@ function KeyCardImpl({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-0.5 shrink-0 flex-wrap">
+        <div className="grid grid-cols-5 gap-1.5 sm:flex sm:items-center sm:justify-end sm:gap-0.5">
           <Button
             variant="outline"
             size="sm"
             onClick={() => onReveal(key_, workspaceIdForAudit)}
-            className="h-6 w-6 p-0 border-border text-muted-foreground hover:text-foreground"
+            className="h-6 w-full p-0 border-border text-muted-foreground hover:text-foreground sm:w-6"
             title={t("keyCard.reveal")}
           >
             <EyeIcon className="size-3" />
@@ -127,7 +143,7 @@ function KeyCardImpl({
               variant="outline"
               size="sm"
               onClick={() => onEdit(key_)}
-              className="h-6 w-6 p-0 border-border text-muted-foreground hover:text-foreground"
+              className="h-6 w-full p-0 border-border text-muted-foreground hover:text-foreground sm:w-6"
               title={t("keyCard.edit")}
             >
               <PencilIcon className="size-3" />
@@ -141,8 +157,8 @@ function KeyCardImpl({
             onClick={() => onActivate(key_)}
             className={
               isMappedInWorkspace
-                ? "h-6 w-6 p-0 bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-30"
-                : "h-6 w-6 p-0 border-border text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/20 disabled:opacity-30"
+                ? "h-6 w-full p-0 bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-30 sm:w-6"
+                : "h-6 w-full p-0 border-border text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/20 disabled:opacity-30 sm:w-6"
             }
             title={
               !key_.envName
@@ -161,7 +177,7 @@ function KeyCardImpl({
             variant="outline"
             size="sm"
             onClick={handleCopy}
-            className="h-6 w-6 p-0 border-border text-muted-foreground hover:text-foreground"
+            className="h-6 w-full p-0 border-border text-muted-foreground hover:text-foreground sm:w-6"
             title={t("keyCard.copyValue")}
           >
             {copiedText && revealed && copiedText === revealed ? (
@@ -175,7 +191,7 @@ function KeyCardImpl({
             variant="outline"
             size="sm"
             onClick={() => onDelete(key_)}
-            className="h-6 w-6 p-0 border-border text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/20"
+            className="h-6 w-full p-0 border-border text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/20 sm:w-6"
             title={t("keyCard.delete")}
           >
             <Trash2Icon className="size-3" />

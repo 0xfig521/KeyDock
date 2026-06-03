@@ -148,7 +148,7 @@ pub(crate) fn log_audit(
 }
 
 pub(crate) const KEY_SELECT: &str =
-    "SELECT k.id, k.secret_id, s.name, k.name, k.env_name, k.include_by_default,
+    "SELECT k.id, k.secret_id, s.name, k.name, k.env_name, k.include_by_default, k.expires_at,
 k.tags_json, k.description, k.created_at, k.updated_at
 FROM keys k JOIN secrets s ON s.id = k.secret_id";
 
@@ -228,7 +228,6 @@ mod tests {
                 name: "openrouter".into(),
                 category: SecretCategory::AI,
                 base_url: Some("https://openrouter.ai/api/v1".into()),
-                model_name: Some("openai/gpt-4.1".into()),
                 tags: vec!["ai".into()],
                 description: None,
                 dashboard_url: None,
@@ -247,6 +246,7 @@ mod tests {
                     include_by_default: true,
                     tags: vec![],
                     description: None,
+                    expires_at: None,
                 },
             )
             .unwrap();
@@ -266,7 +266,6 @@ mod tests {
                 name: "github".into(),
                 category: SecretCategory::DevTool,
                 base_url: None,
-                model_name: None,
                 tags: vec![],
                 description: None,
                 dashboard_url: None,
@@ -285,6 +284,7 @@ mod tests {
                     include_by_default: true,
                     tags: vec![],
                     description: None,
+                    expires_at: None,
                 },
             )
             .unwrap();
@@ -349,7 +349,6 @@ mod tests {
                 name: "openrouter".into(),
                 category: SecretCategory::AI,
                 base_url: Some("https://openrouter.ai/api/v1".into()),
-                model_name: Some("anthropic/claude-sonnet-4".into()),
                 tags: vec![],
                 description: None,
                 dashboard_url: None,
@@ -368,6 +367,7 @@ mod tests {
                     include_by_default: true,
                     tags: vec![],
                     description: None,
+                    expires_at: None,
                 },
             )
             .unwrap();
@@ -376,7 +376,6 @@ mod tests {
             env.get("OPENAI_BASE_URL").unwrap(),
             "https://openrouter.ai/api/v1"
         );
-        assert_eq!(env.get("MODEL_NAME").unwrap(), "anthropic/claude-sonnet-4");
         assert_eq!(env.get("OPENAI_API_KEY").unwrap(), "sk-test");
     }
 }

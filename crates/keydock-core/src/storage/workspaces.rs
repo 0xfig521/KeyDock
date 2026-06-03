@@ -209,14 +209,6 @@ impl AppStore {
                 key_id: String::new(),
             });
         }
-        if let Some(model_name) = secret.model_name {
-            env.push(WorkspaceEnv {
-                env_name: "MODEL_NAME".into(),
-                value: model_name,
-                secret_id: secret.id.clone(),
-                key_id: String::new(),
-            });
-        }
         // Single query fetches encrypted_value for all default keys,
         // eliminating the N+1 pattern from the old list_keys + key_value loop.
         let mut stmt = self.conn.prepare(

@@ -124,7 +124,6 @@ export function SecretForm({
                   </SelectGroup>
                 </SelectContent>
               </Select>
-            </div>
           </div>
 
           <div className="space-y-1">
@@ -139,29 +138,51 @@ export function SecretForm({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-[11px] uppercase font-mono text-muted-foreground">
+              {t("secretForm.tags")} {t("secretForm.tagsHint")}
+            </label>
+            <Input
+              value={form.tags}
+              onChange={(e) => onChange({ ...form, tags: e.target.value })}
+              placeholder={t("secretForm.tagsPlaceholder")}
+              className="h-8 text-xs bg-background/50"
+            />
+          </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-1">
               <label className="text-[11px] uppercase font-mono text-muted-foreground">
-                {t("secretForm.defaultModel")} {t("secretForm.optional")}
+                {t("secretForm.dashboardUrl")} {t("secretForm.optional")}
               </label>
               <Input
-                value={form.modelName}
-                onChange={(e) =>
-                  onChange({ ...form, modelName: e.target.value })
-                }
-                placeholder={t("secretForm.modelPlaceholder")}
-                className="h-8 text-xs bg-background/50"
+                value={form.dashboardUrl}
+                onChange={(e) => onChange({ ...form, dashboardUrl: e.target.value })}
+                placeholder={t("secretForm.urlPlaceholder")}
+                className="h-8 text-xs bg-background/50 font-mono"
               />
             </div>
             <div className="space-y-1">
               <label className="text-[11px] uppercase font-mono text-muted-foreground">
-                {t("secretForm.tags")} {t("secretForm.tagsHint")}
+                {t("secretForm.docsUrl")} {t("secretForm.optional")}
               </label>
               <Input
-                value={form.tags}
-                onChange={(e) => onChange({ ...form, tags: e.target.value })}
-                placeholder={t("secretForm.tagsPlaceholder")}
-                className="h-8 text-xs bg-background/50"
+                value={form.docsUrl}
+                onChange={(e) => onChange({ ...form, docsUrl: e.target.value })}
+                placeholder={t("secretForm.urlPlaceholder")}
+                className="h-8 text-xs bg-background/50 font-mono"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] uppercase font-mono text-muted-foreground">
+                {t("secretForm.loginUrl")} {t("secretForm.optional")}
+              </label>
+              <Input
+                value={form.loginUrl}
+                onChange={(e) => onChange({ ...form, loginUrl: e.target.value })}
+                placeholder={t("secretForm.urlPlaceholder")}
+                className="h-8 text-xs bg-background/50 font-mono"
               />
             </div>
           </div>

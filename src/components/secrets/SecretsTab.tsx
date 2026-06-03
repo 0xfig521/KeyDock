@@ -66,9 +66,11 @@ export function SecretsTab({
         name: preset.name,
         category: preset.category,
         baseUrl: preset.baseUrl,
-        modelName: preset.modelName,
         tags: preset.tags,
         description: preset.description ?? "",
+        dashboardUrl: "",
+        docsUrl: "",
+        loginUrl: "",
       })
       keys.setForm({
         name: preset.key.name,
@@ -76,6 +78,7 @@ export function SecretsTab({
         envName: preset.key.env,
         includeByDefault: true,
         tags: "",
+        expiresAt: "",
       })
       show(
         t("toast.serviceExists", { name: preset.name }),

@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
+import { getVersion } from "@tauri-apps/api/app"
 import { LockScreen } from "@/components/layout/LockScreen"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { ToastView } from "@/components/layout/ToastView"
@@ -11,6 +13,7 @@ import { useKeys } from "@/hooks/useKeys"
 import { useAudit } from "@/hooks/useAudit"
 import { useSecrets } from "@/hooks/useSecrets"
 import { useToast } from "@/hooks/useToast"
+import { useUpdate } from "@/hooks/useUpdate"
 import { useVault } from "@/hooks/useVault"
 import { useWorkspaces } from "@/hooks/useWorkspaces"
 import { useTheme } from "@/hooks/useTheme"
@@ -27,12 +30,19 @@ export function App() {
   const keys = useKeys()
   const workspaces = useWorkspaces()
   const audit = useAudit()
+  const { t } = useTranslation()
   const { show } = useToast()
+  const { update, checkForUpdates, installUpdate } = useUpdate()
 
   const [activeTab, setActiveTab] = useState<Tab>("dashboard")
   const [selectedSecretId, setSelectedSecretId] = useState("")
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState("")
   const [activeWorkspace, setActiveWorkspace] = useState<ActiveWorkspace | null>(null)
+  const [currentVersion, setCurrentVersion] = useState("")
+
+  useEffect(() => {
+    getVersion().then(setCurrentVersion).catch(() => setCurrentVersion(""))
+  }, [])
 
   useEffect(() => {
     if (!vault.ready) return
@@ -87,6 +97,15 @@ export function App() {
     }
   }
 
+  const handleCheckUpdate = useCallback(async () => {
+    const hasUpdate = await checkForUpdates()
+    if (hasUpdate) {
+      show(t("settings.updateAvailable"), "info")
+    } else {
+      show(t("settings.upToDate"), "success")
+    }
+  }, [checkForUpdates, show, t])
+
   function handleTabChange(tab: Tab) {
     if (tab !== "secrets") {
       keys.closeForm()
@@ -114,8 +133,10 @@ export function App() {
         secretCount={secrets.secrets.length}
         workspaceCount={workspaces.workspaces.length}
         onLockClick={handleLock}
+        updateStatus={update.status}
+        onCheckUpdate={handleCheckUpdate}
       />
-
+ 
       <main className="flex-1 min-w-0 h-screen overflow-hidden bg-background flex flex-col">
         {activeTab === "dashboard" && (
           <DashboardTab
@@ -151,7 +172,14 @@ export function App() {
         {activeTab === "audit" && (
           <AuditTab logs={audit.logs} onRefresh={audit.refresh} />
         )}
-        {activeTab === "settings" && <SettingsTab />}
+        {activeTab === "settings" && (
+          <SettingsTab
+            update={update}
+            currentVersion={currentVersion}
+            onCheckUpdate={handleCheckUpdate}
+            onInstallUpdate={installUpdate}
+          />
+        )}
       </main>
 
       <ToastView />

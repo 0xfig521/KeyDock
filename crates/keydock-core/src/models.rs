@@ -12,12 +12,6 @@ pub enum SecretCategory {
     Custom,
 }
 
-impl Default for SecretCategory {
-    fn default() -> Self {
-        Self::AI
-    }
-}
-
 impl SecretCategory {
     pub fn as_str(&self) -> &'static str {
         match self {
@@ -51,7 +45,6 @@ pub struct Secret {
     pub name: String,
     pub category: SecretCategory,
     pub base_url: Option<String>,
-    pub model_name: Option<String>,
     pub tags: Vec<String>,
     pub description: Option<String>,
     pub dashboard_url: Option<String>,
@@ -66,10 +59,8 @@ pub struct Secret {
 #[serde(rename_all = "camelCase")]
 pub struct SecretInput {
     pub name: String,
-    #[serde(default)]
     pub category: SecretCategory,
     pub base_url: Option<String>,
-    pub model_name: Option<String>,
     #[serde(default)]
     pub tags: Vec<String>,
     pub description: Option<String>,
@@ -91,6 +82,7 @@ pub struct Key {
     pub tags: Vec<String>,
     pub description: Option<String>,
     pub preview: Option<String>,
+    pub expires_at: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -106,6 +98,7 @@ pub struct KeyInput {
     #[serde(default)]
     pub tags: Vec<String>,
     pub description: Option<String>,
+    pub expires_at: Option<String>,
 }
 
 fn default_include_by_default() -> bool {

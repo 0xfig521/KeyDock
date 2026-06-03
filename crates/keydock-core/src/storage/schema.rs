@@ -27,6 +27,9 @@ impl AppStore {
         self.run_migration(4, "fix_workspace_variables_columns", |s| {
             s.migrate_v4_fix_workspace_variables()
         })?;
+        self.run_migration(5, "add_keys_expires_at", |s| {
+            s.migrate_v5_add_keys_expires_at()
+        })?;
 
         Ok(())
     }
@@ -235,6 +238,16 @@ impl AppStore {
                     "ALTER TABLE workspace_variables ADD COLUMN key_id TEXT NOT NULL DEFAULT '';",
                 )?;
             }
+        }
+        Ok(())
+    }
+
+    // ── V5: add expires_at to keys ────────────────────────────────────
+
+    fn migrate_v5_add_keys_expires_at(&self) -> Result<()> {
+        if self.table_exists("keys")? && !self.column_exists("keys", "expires_at")? {
+            self.conn
+                .execute("ALTER TABLE keys ADD COLUMN expires_at TEXT", [])?;
         }
         Ok(())
     }
