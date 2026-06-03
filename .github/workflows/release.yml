@@ -65,34 +65,42 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          # Skip code signing on CI runner
+          APPLE_CODESIGN_IDENTITY: ""
 
       - name: Collect artifacts
         id: artifacts
         shell: bash
         run: |
-          DMG_DIR="src-tauri/target/universal-apple-darwin/release/bundle/dmg"
-          DMG_FILE=$(ls "$DMG_DIR"/*.dmg 2>/dev/null | head -1)
-          SIG_FILE="${DMG_FILE}.sig"
+          # Search for DMG under any target directory (not just universal-apple-darwin)
+          DMG_FILE=$(find src-tauri/target -name "*.dmg" -type f -print 2>/dev/null | head -1)
 
           if [ -z "$DMG_FILE" ]; then
-            echo "::error::DMG not found in $DMG_DIR"
+            echo "::error::No DMG found under src-tauri/target/"
+            echo "::group::Debug: target directory structure"
+            find src-tauri/target -maxdepth 5 -type d 2>/dev/null | sort | head -80
+            echo "::endgroup::"
             exit 1
           fi
 
-          echo "DMG=$DMG_FILE" >> "$GITHUB_OUTPUT"
+          echo "Found DMG: $DMG_FILE"
+          DMG_DIR="$(dirname "$DMG_FILE")"
+          SIG_FILE="${DMG_FILE}.sig"
 
           # Rename to a predictable name for the release asset
           mv "$DMG_FILE" "$DMG_DIR/KeyDock-universal.dmg"
           if [ -f "$SIG_FILE" ]; then
             mv "$SIG_FILE" "$DMG_DIR/KeyDock-universal.dmg.sig"
           fi
+
           echo "DMG=$DMG_DIR/KeyDock-universal.dmg" >> "$GITHUB_OUTPUT"
+          echo "DMG_DIR=$DMG_DIR" >> "$GITHUB_OUTPUT"
 
       - name: Generate update.json
         shell: bash
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          DMG_DIR="src-tauri/target/universal-apple-darwin/release/bundle/dmg"
+          DMG_DIR="${{ steps.artifacts.outputs.DMG_DIR }}"
           SIG=$(cat "$DMG_DIR/KeyDock-universal.dmg.sig" 2>/dev/null || echo "")
 
           jq -n \
@@ -116,6 +124,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            src-tauri/target/universal-apple-darwin/release/bundle/dmg/KeyDock-universal.dmg
+            ${{ steps.artifacts.outputs.DMG }}
             update.json
           generate_release_notes: true
