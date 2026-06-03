@@ -176,7 +176,9 @@
     "selectServiceTip": "先在密钥标签页中选择一个服务",
     "deleteConfirmTitle": "删除工作区",
     "deleteConfirmMsg": "删除工作区 \"{{name}}\" 及其变量映射？此操作不可撤销。",
-    "delete": "删除"
+    "deleteConfirmActiveMsg": "\"{{name}}\" 是当前活跃工作区，删除将停用当前环境并移除所有变量映射。此操作不可撤销。",
+    "delete": "删除",
+    "deletedMsg": "已删除工作区 \"{{name}}\""
   },
   "variableMapper": {
     "newMapping": "新建映射",

@@ -176,7 +176,9 @@
     "selectServiceTip": "Select a service in the Secrets tab first",
     "deleteConfirmTitle": "Delete Workspace",
     "deleteConfirmMsg": "Delete workspace \"{{name}}\" and its variable mappings? This cannot be undone.",
-    "delete": "Delete"
+    "deleteConfirmActiveMsg": "\"{{name}}\" is the active workspace. Deleting it will deactivate the current environment and remove all variable mappings. This cannot be undone.",
+    "delete": "Delete",
+    "deletedMsg": "Deleted workspace \"{{name}}\""
   },
   "variableMapper": {
     "newMapping": "New Mapping",

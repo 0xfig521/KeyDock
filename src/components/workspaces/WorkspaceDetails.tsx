@@ -1,9 +1,11 @@
+import { useState } from "react"
 import { PowerIcon, PowerOffIcon, RefreshCwIcon, Trash2Icon, FileTextIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useClipboard } from "@/hooks/useClipboard"
+import { useToast } from "@/hooks/useToast"
 import { useVariables } from "@/hooks/useVariables"
 import { useConfirm } from "@/components/ui/confirm-dialog"
 import { deleteWorkspace as deleteWorkspaceApi } from "@/lib/tauri"
@@ -18,6 +20,7 @@ interface WorkspaceDetailsProps {
   keys: Key[]
   selectedSecretId: string
   variables: ReturnType<typeof useVariables>
+  onDeleteWorkspace?: (id: string) => void
 }
 
 export function WorkspaceDetails({
@@ -68,6 +71,9 @@ export function WorkspaceDetails({
           <DeleteWorkspaceButton
             workspaceId={workspace.id}
             workspaceName={workspace.name}
+            isActive={isActive}
+            onDelete={onDeleteWorkspace}
+            deactivate={variables.deactivate}
           />
         </div>
       </div>
@@ -174,27 +180,52 @@ export function WorkspaceDetails({
 function DeleteWorkspaceButton({
   workspaceId,
   workspaceName,
+  onDelete,
+  isActive,
+  deactivate,
 }: {
   workspaceId: string
   workspaceName: string
+  onDelete?: (id: string) => void
+  isActive?: boolean
+  deactivate?: () => Promise<void>
 }) {
   const { t } = useTranslation()
+  const { show } = useToast()
   const confirm_ = useConfirm()
+  const [deleting, setDeleting] = useState(false)
+
   async function handleClick() {
     const ok = await confirm_({
       title: t("workspaceDetails.deleteConfirmTitle"),
-      message: t("workspaceDetails.deleteConfirmMsg", { name: workspaceName }),
+      message: isActive
+        ? t("workspaceDetails.deleteConfirmActiveMsg", { name: workspaceName })
+        : t("workspaceDetails.deleteConfirmMsg", { name: workspaceName }),
       confirmLabel: t("workspaceDetails.delete"),
       variant: "danger",
     })
     if (!ok) return
-    void deleteWorkspaceApi(workspaceId)
+    try {
+      setDeleting(true)
+      // Deactivate first if this is the active workspace
+      if (isActive && deactivate) {
+        await deactivate()
+      }
+      await deleteWorkspaceApi(workspaceId)
+      show(t("workspaceDetails.deletedMsg", { name: workspaceName }), "info")
+      onDelete?.(workspaceId)
+    } catch (e) {
+      show(extractMessage(e), "error")
+    } finally {
+      setDeleting(false)
+    }
   }
   return (
     <Button
       variant="outline"
       size="sm"
       onClick={handleClick}
+      disabled={deleting}
       className="h-7 w-7 p-0 border-border text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/20"
       title={t("workspaceDetails.deleteWorkspace")}
     >

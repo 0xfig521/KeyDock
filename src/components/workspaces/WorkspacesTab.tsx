@@ -51,6 +51,13 @@ export function WorkspacesTab({
     (w) => w.id === selectedWorkspaceId,
   )
 
+  const handleDeleteWorkspace = useCallback(
+    (_id: string) => {
+      workspaces.refresh()
+    },
+    [workspaces],
+  )
+
   async function handleCreate(event: FormEvent) {
     event.preventDefault()
     const created = await workspaces.create()
@@ -79,6 +86,7 @@ export function WorkspacesTab({
             keys={keys.keys}
             selectedSecretId={selectedSecretId}
             variables={variables}
+            onDeleteWorkspace={handleDeleteWorkspace}
           />
         ) : (
           <WorkspacesTabEmpty onCreate={focusCreateInput} />

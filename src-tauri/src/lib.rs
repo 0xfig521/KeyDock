@@ -56,6 +56,12 @@ fn get_vault_status(state: State<'_, AppState>) -> CommandResult<VaultStatus> {
 fn setup_master_password(state: State<'_, AppState>, password: String) -> CommandResult<()> {
     let dek = initialize_vault(&state.db_path, &password)?;
     let store = AppStore::open(state.db_path.clone(), dek)?;
+
+    // Auto-create a default workspace for brand-new vaults.
+    if store.list_workspaces()?.is_empty() {
+        store.create_workspace("default", Some("Default workspace"))?;
+    }
+
     *state
         .store
         .lock()
