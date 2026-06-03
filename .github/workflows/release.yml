@@ -72,13 +72,13 @@ jobs:
         id: artifacts
         shell: bash
         run: |
-          # Search for DMG under any target directory (not just universal-apple-darwin)
-          DMG_FILE=$(find src-tauri/target -name "*.dmg" -type f -print 2>/dev/null | head -1)
+          # Search under both workspace target/ and src-tauri/target/ (Cargo workspace puts output in root target/)
+          DMG_FILE=$(find target src-tauri/target -name "*.dmg" -type f -print 2>/dev/null | head -1)
 
           if [ -z "$DMG_FILE" ]; then
-            echo "::error::No DMG found under src-tauri/target/"
+            echo "::error::No DMG found under target/ or src-tauri/target/"
             echo "::group::Debug: target directory structure"
-            find src-tauri/target -maxdepth 5 -type d 2>/dev/null | sort | head -80
+            find target src-tauri/target -maxdepth 5 -type d 2>/dev/null | sort | head -80
             echo "::endgroup::"
             exit 1
           fi
