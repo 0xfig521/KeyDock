@@ -1,4 +1,4 @@
-import type { RefObject } from "react"
+import { memo, type RefObject } from "react"
 import { PlusIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
@@ -20,7 +20,7 @@ interface WorkspaceListProps {
   activeWorkspaceId: string | null
 }
 
-export function WorkspaceList({
+export const WorkspaceList = memo(function WorkspaceList({
   workspaces,
   formName,
   submitting,
@@ -114,4 +114,4 @@ export function WorkspaceList({
       </ScrollArea>
     </div>
   )
-}
+})
