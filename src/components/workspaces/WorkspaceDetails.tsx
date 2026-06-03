@@ -28,6 +28,7 @@ export function WorkspaceDetails({
   keys,
   selectedSecretId,
   variables,
+  onDeleteWorkspace,
 }: WorkspaceDetailsProps) {
   const { t } = useTranslation()
   const { copy } = useClipboard()
@@ -215,7 +216,7 @@ function DeleteWorkspaceButton({
       show(t("workspaceDetails.deletedMsg", { name: workspaceName }), "info")
       onDelete?.(workspaceId)
     } catch (e) {
-      show(extractMessage(e), "error")
+      show(e instanceof Error ? e.message : String(e), "error")
     } finally {
       setDeleting(false)
     }

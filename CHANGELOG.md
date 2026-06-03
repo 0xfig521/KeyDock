@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1 - 2026-06-03
+
+### Fixes
+- Fix TypeScript build errors: missing prop destructuring and undefined error handler in `DeleteWorkspaceButton`
+
 ## 0.4.0 - 2026-06-03
 
 ### Features
