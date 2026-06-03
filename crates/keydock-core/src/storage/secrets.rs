@@ -1,4 +1,4 @@
-use super::{now, AppStore};
+use super::{log_audit, now, with_tx, AppStore};
 use crate::{Secret, SecretCategory, SecretInput};
 use anyhow::{anyhow, Result};
 use rusqlite::{params, OptionalExtension};
@@ -7,51 +7,57 @@ use uuid::Uuid;
 impl AppStore {
     pub fn create_secret(&self, input: SecretInput) -> Result<Secret> {
         let id = Uuid::new_v4().to_string();
-        let now = now();
-        self.conn.execute(
-            "INSERT INTO secrets (id, name, category, base_url, model_name, tags_json, description, dashboard_url, docs_url, login_url, notes, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?12)",
-            params![
-                id,
-                input.name,
-                input.category.as_str(),
-                input.base_url,
-                input.model_name,
-                serde_json::to_string(&input.tags)?,
-                input.description,
-                input.dashboard_url,
-                input.docs_url,
-                input.login_url,
-                input.notes,
-                now,
-            ],
-        )?;
-        self.audit("create_secret", Some(&id), None, None)?;
+        let now_ts = now();
+        let tags_json = serde_json::to_string(&input.tags)?;
+        with_tx(&self.conn, |conn| {
+            conn.execute(
+                "INSERT INTO secrets (id, name, category, base_url, model_name, tags_json, description, dashboard_url, docs_url, login_url, notes, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?12)",
+                params![
+                    &id,
+                    &input.name,
+                    input.category.as_str(),
+                    &input.base_url,
+                    &input.model_name,
+                    &tags_json,
+                    &input.description,
+                    &input.dashboard_url,
+                    &input.docs_url,
+                    &input.login_url,
+                    &input.notes,
+                    &now_ts,
+                ],
+            )?;
+            log_audit(conn, "create_secret", Some(&id), None, None)
+        })?;
         self.get_secret_by_id(&id)?
             .ok_or_else(|| anyhow!("created secret not found"))
     }
 
     pub fn update_secret(&self, id: &str, input: SecretInput) -> Result<Secret> {
-        let now = now();
-        self.conn.execute(
-            "UPDATE secrets SET name = ?2, category = ?3, base_url = ?4, model_name = ?5, tags_json = ?6,
-             description = ?7, dashboard_url = ?8, docs_url = ?9, login_url = ?10, notes = ?11, updated_at = ?12 WHERE id = ?1",
-            params![
-                id,
-                input.name,
-                input.category.as_str(),
-                input.base_url,
-                input.model_name,
-                serde_json::to_string(&input.tags)?,
-                input.description,
-                input.dashboard_url,
-                input.docs_url,
-                input.login_url,
-                input.notes,
-                now,
-            ],
-        )?;
-        self.audit("edit_secret", Some(id), None, None)?;
+        let now_ts = now();
+        let tags_json = serde_json::to_string(&input.tags)?;
+        with_tx(&self.conn, |conn| {
+            conn.execute(
+                "UPDATE secrets SET name = ?2, category = ?3, base_url = ?4, model_name = ?5, tags_json = ?6,
+                 description = ?7, dashboard_url = ?8, docs_url = ?9, login_url = ?10, notes = ?11, updated_at = ?12 WHERE id = ?1",
+                params![
+                    id,
+                    &input.name,
+                    input.category.as_str(),
+                    &input.base_url,
+                    &input.model_name,
+                    &tags_json,
+                    &input.description,
+                    &input.dashboard_url,
+                    &input.docs_url,
+                    &input.login_url,
+                    &input.notes,
+                    &now_ts,
+                ],
+            )?;
+            log_audit(conn, "edit_secret", Some(id), None, None)
+        })?;
         self.get_secret_by_id(id)?
             .ok_or_else(|| anyhow!("secret not found"))
     }
@@ -98,10 +104,10 @@ impl AppStore {
 
     pub fn delete_secret(&self, id_or_name: &str) -> Result<()> {
         let secret = self.resolve_secret(id_or_name)?;
-        self.conn
-            .execute("DELETE FROM secrets WHERE id = ?1", [secret.id.as_str()])?;
-        self.audit("delete_secret", Some(&secret.id), None, None)?;
-        Ok(())
+        with_tx(&self.conn, |conn| {
+            conn.execute("DELETE FROM secrets WHERE id = ?1", [&secret.id])?;
+            log_audit(conn, "delete_secret", Some(&secret.id), None, None)
+        })
     }
 }
 

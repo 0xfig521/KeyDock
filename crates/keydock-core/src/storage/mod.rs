@@ -43,6 +43,13 @@ impl AppStore {
             std::fs::create_dir_all(parent).context("create database parent directory")?;
         }
         let conn = Connection::open(path).context("open sqlite database")?;
+        conn.execute_batch(
+            "PRAGMA journal_mode = WAL;
+             PRAGMA synchronous = NORMAL;
+             PRAGMA cache_size = -64000;
+             PRAGMA busy_timeout = 5000;",
+        )
+        .context("set sqlite pragmas")?;
         let store = Self { conn, master_key };
         store.migrate()?;
         Ok(store)
@@ -95,16 +102,49 @@ impl AppStore {
             .optional()
             .map_err(Into::into)
     }
+}
 
-    pub(crate) fn next_workspace_sort_order(&self, workspace_id: &str) -> Result<i64> {
-        self.conn
-            .query_row(
-                "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM workspace_variables WHERE workspace_id = ?1",
-                [workspace_id],
-                |row| row.get(0),
-            )
-            .map_err(Into::into)
+/// Execute `f` inside a SQLite transaction (BEGIN/COMMIT).
+/// On error the transaction is rolled back.
+pub(crate) fn with_tx<T>(
+    conn: &Connection,
+    f: impl FnOnce(&Connection) -> anyhow::Result<T>,
+) -> anyhow::Result<T> {
+    conn.execute_batch("BEGIN")?;
+    match f(conn) {
+        Ok(val) => {
+            conn.execute_batch("COMMIT")?;
+            Ok(val)
+        }
+        Err(e) => {
+            conn.execute_batch("ROLLBACK").ok();
+            Err(e)
+        }
     }
+}
+
+/// Write an audit log row on the given connection (used inside transactions).
+pub(crate) fn log_audit(
+    conn: &Connection,
+    action: &str,
+    target_id: Option<&str>,
+    workspace_id: Option<&str>,
+    env_name: Option<&str>,
+) -> anyhow::Result<()> {
+    use uuid::Uuid;
+    conn.execute(
+        "INSERT INTO audit_logs (id, action, target_id, workspace_id, env_name, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        rusqlite::params![
+            Uuid::new_v4().to_string(),
+            action,
+            target_id,
+            workspace_id,
+            env_name,
+            now(),
+        ],
+    )?;
+    Ok(())
 }
 
 pub(crate) const KEY_SELECT: &str =

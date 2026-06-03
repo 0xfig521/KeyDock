@@ -1,4 +1,4 @@
-use super::{bool_to_i64, now, validate_env_name, AppStore, KEY_SELECT};
+use super::{bool_to_i64, log_audit, now, validate_env_name, with_tx, AppStore, KEY_SELECT};
 use crate::{encrypt_secret, Key, KeyInput};
 use anyhow::{anyhow, Result};
 use rusqlite::{params, OptionalExtension};
@@ -10,24 +10,27 @@ impl AppStore {
         }
         let secret = self.resolve_secret(secret_id_or_name)?;
         let id = uuid::Uuid::new_v4().to_string();
-        let now = now();
+        let now_ts = now();
         let encrypted_value = encrypt_secret(&self.master_key, &input.value)?;
-        self.conn.execute(
-            "INSERT INTO keys (id, secret_id, name, encrypted_value, env_name, include_by_default, tags_json, description, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?9)",
-            params![
-                id,
-                secret.id,
-                input.name,
-                encrypted_value,
-                input.env_name,
-                bool_to_i64(input.include_by_default),
-                serde_json::to_string(&input.tags)?,
-                input.description,
-                now,
-            ],
-        )?;
-        self.audit("create_key", Some(&id), None, None)?;
+        let tags_json = serde_json::to_string(&input.tags)?;
+        with_tx(&self.conn, |conn| {
+            conn.execute(
+                "INSERT INTO keys (id, secret_id, name, encrypted_value, env_name, include_by_default, tags_json, description, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?9)",
+                params![
+                    &id,
+                    &secret.id,
+                    &input.name,
+                    &encrypted_value,
+                    &input.env_name,
+                    bool_to_i64(input.include_by_default),
+                    &tags_json,
+                    &input.description,
+                    &now_ts,
+                ],
+            )?;
+            log_audit(conn, "create_key", Some(&id), None, None)
+        })?;
         self.get_key_by_id(&id)?
             .ok_or_else(|| anyhow!("created key not found"))
     }
@@ -99,47 +102,53 @@ impl AppStore {
             validate_env_name(env_name)?;
         }
         let key = self.resolve_key(id_or_path)?;
-        let now = now();
-        if input.value.is_empty() {
-            self.conn.execute(
-                "UPDATE keys SET name = ?2, env_name = ?3, include_by_default = ?4, tags_json = ?5, description = ?6, updated_at = ?7 WHERE id = ?1",
-                params![
-                    key.id,
-                    input.name,
-                    input.env_name,
-                    bool_to_i64(input.include_by_default),
-                    serde_json::to_string(&input.tags)?,
-                    input.description,
-                    now,
-                ],
-            )?;
-        } else {
-            let encrypted_value = encrypt_secret(&self.master_key, &input.value)?;
-            self.conn.execute(
-                "UPDATE keys SET name = ?2, encrypted_value = ?3, env_name = ?4, include_by_default = ?5, tags_json = ?6, description = ?7, updated_at = ?8 WHERE id = ?1",
-                params![
-                    key.id,
-                    input.name,
-                    encrypted_value,
-                    input.env_name,
-                    bool_to_i64(input.include_by_default),
-                    serde_json::to_string(&input.tags)?,
-                    input.description,
-                    now,
-                ],
-            )?;
-        }
-        self.audit("edit_key", Some(&key.id), None, None)?;
+        let now_ts = now();
+        let tags_json = serde_json::to_string(&input.tags)?;
+        let key_id = key.id.clone();
+        with_tx(&self.conn, |conn| {
+            if input.value.is_empty() {
+                conn.execute(
+                    "UPDATE keys SET name = ?2, env_name = ?3, include_by_default = ?4, tags_json = ?5, description = ?6, updated_at = ?7 WHERE id = ?1",
+                    params![
+                        &key_id,
+                        &input.name,
+                        &input.env_name,
+                        bool_to_i64(input.include_by_default),
+                        &tags_json,
+                        &input.description,
+                        &now_ts,
+                    ],
+                )?;
+            } else {
+                let encrypted_value = encrypt_secret(&self.master_key, &input.value)?;
+                conn.execute(
+                    "UPDATE keys SET name = ?2, encrypted_value = ?3, env_name = ?4, include_by_default = ?5, tags_json = ?6, description = ?7, updated_at = ?8 WHERE id = ?1",
+                    params![
+                        &key_id,
+                        &input.name,
+                        &encrypted_value,
+                        &input.env_name,
+                        bool_to_i64(input.include_by_default),
+                        &tags_json,
+                        &input.description,
+                        &now_ts,
+                    ],
+                )?;
+            }
+            log_audit(conn, "edit_key", Some(&key_id), None, None)
+        })?;
         self.get_key_by_id(&key.id)?
             .ok_or_else(|| anyhow!("key not found"))
     }
 
     pub fn delete_key(&self, id_or_path: &str) -> Result<()> {
         let key = self.resolve_key(id_or_path)?;
-        self.conn
-            .execute("DELETE FROM keys WHERE id = ?1", [key.id.as_str()])?;
-        self.audit("delete_key", Some(&key.id), None, key.env_name.as_deref())?;
-        Ok(())
+        let key_id = key.id.clone();
+        let env_name = key.env_name.clone();
+        with_tx(&self.conn, |conn| {
+            conn.execute("DELETE FROM keys WHERE id = ?1", [&key_id])?;
+            log_audit(conn, "delete_key", Some(&key_id), None, env_name.as_deref())
+        })
     }
 }
 

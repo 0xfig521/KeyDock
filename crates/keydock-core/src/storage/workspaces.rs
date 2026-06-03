@@ -1,6 +1,6 @@
 use super::shell::{format_env, write_active_env};
-use super::{now, validate_env_name, AppStore};
-use crate::{ActiveWorkspace, Workspace, WorkspaceEnv, WorkspaceVariable};
+use super::{log_audit, now, validate_env_name, with_tx, AppStore};
+use crate::{decrypt_secret, ActiveWorkspace, Workspace, WorkspaceEnv, WorkspaceVariable};
 use anyhow::{anyhow, Result};
 use rusqlite::{params, OptionalExtension};
 use uuid::Uuid;
@@ -58,39 +58,46 @@ impl AppStore {
             .or(key.env_name.as_deref())
             .ok_or_else(|| anyhow!("key has no default env name; provide one explicitly"))?;
         validate_env_name(env_name)?;
-        let now = now();
-        // Explicit SELECT-then-INSERT-or-UPDATE: UPSERT silently discards
-        // the new UUID and hides insert-vs-update from the reader.
-        let existing: Option<String> = self
-            .conn
-            .query_row(
-                "SELECT id FROM workspace_variables WHERE workspace_id = ?1 AND env_name = ?2",
-                params![workspace.id, env_name],
-                |row| row.get(0),
+        let now_ts = now();
+        let ws_id = workspace.id.clone();
+        let key_secret_id = key.secret_id.clone();
+        let key_id = key.id.clone();
+        with_tx(&self.conn, |conn| {
+            let existing: Option<String> = conn
+                .query_row(
+                    "SELECT id FROM workspace_variables WHERE workspace_id = ?1 AND env_name = ?2",
+                    params![&ws_id, env_name],
+                    |row| row.get(0),
+                )
+                .optional()?;
+            if let Some(existing_id) = existing {
+                conn.execute(
+                    "UPDATE workspace_variables
+                     SET secret_id = ?1, key_id = ?2, enabled = 1, updated_at = ?3
+                     WHERE id = ?4",
+                    params![&key_secret_id, &key_id, &now_ts, &existing_id],
+                )?;
+            } else {
+                let id = Uuid::new_v4().to_string();
+                let sort_order: i64 = conn.query_row(
+                    "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM workspace_variables WHERE workspace_id = ?1",
+                    [&ws_id],
+                    |row| row.get(0),
+                )?;
+                conn.execute(
+                    "INSERT INTO workspace_variables (id, workspace_id, secret_id, key_id, env_name, enabled, required, sort_order, created_at, updated_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, 1, 0, ?6, ?7, ?7)",
+                    params![id, &ws_id, &key_secret_id, &key_id, env_name, sort_order, &now_ts],
+                )?;
+            }
+            log_audit(
+                conn,
+                "map_workspace_variable",
+                Some(&key_id),
+                Some(&ws_id),
+                Some(env_name),
             )
-            .optional()?;
-        if let Some(existing_id) = existing {
-            self.conn.execute(
-                "UPDATE workspace_variables
-                 SET secret_id = ?1, key_id = ?2, enabled = 1, updated_at = ?3
-                 WHERE id = ?4",
-                params![key.secret_id, key.id, now, existing_id],
-            )?;
-        } else {
-            let id = Uuid::new_v4().to_string();
-            let sort_order = self.next_workspace_sort_order(&workspace.id)?;
-            self.conn.execute(
-                "INSERT INTO workspace_variables (id, workspace_id, secret_id, key_id, env_name, enabled, required, sort_order, created_at, updated_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, 1, 0, ?6, ?7, ?7)",
-                params![id, workspace.id, key.secret_id, key.id, env_name, sort_order, now],
-            )?;
-        }
-        self.audit(
-            "map_workspace_variable",
-            Some(&key.id),
-            Some(&workspace.id),
-            Some(env_name),
-        )?;
+        })?;
         self.workspace_variable(&workspace.id, env_name)?
             .ok_or_else(|| anyhow!("workspace variable not found"))
     }
@@ -142,24 +149,31 @@ impl AppStore {
         env_name: &str,
     ) -> Result<()> {
         let workspace = self.resolve_workspace(workspace_id_or_name)?;
-        self.conn.execute(
-            "DELETE FROM workspace_variables WHERE workspace_id = ?1 AND env_name = ?2",
-            params![workspace.id, env_name],
-        )?;
-        self.audit(
-            "unmap_workspace_variable",
-            None,
-            Some(&workspace.id),
-            Some(env_name),
-        )?;
-        Ok(())
+        let ws_id = workspace.id.clone();
+        with_tx(&self.conn, |conn| {
+            conn.execute(
+                "DELETE FROM workspace_variables WHERE workspace_id = ?1 AND env_name = ?2",
+                params![&ws_id, env_name],
+            )?;
+            log_audit(
+                conn,
+                "unmap_workspace_variable",
+                None,
+                Some(&ws_id),
+                Some(env_name),
+            )
+        })
     }
 
     pub fn workspace_env(&self, workspace_id_or_name: &str) -> Result<Vec<WorkspaceEnv>> {
         let workspace = self.resolve_workspace(workspace_id_or_name)?;
+        // Single JOIN query fetches encrypted_value alongside each variable,
+        // eliminating the N+1 pattern where every variable called key_value()
+        // (another SQL query + XChaCha20 decrypt) individually.
         let mut stmt = self.conn.prepare(
-            "SELECT wv.env_name, wv.secret_id, wv.key_id
+            "SELECT wv.env_name, wv.secret_id, wv.key_id, k.encrypted_value
              FROM workspace_variables wv
+             JOIN keys k ON k.id = wv.key_id
              WHERE wv.workspace_id = ?1 AND wv.enabled = 1
              ORDER BY wv.sort_order, wv.env_name COLLATE NOCASE",
         )?;
@@ -168,14 +182,15 @@ impl AppStore {
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
                 row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
             ))
         })?;
-        let mut env = Vec::new();
+        let mut env = Vec::with_capacity(rows.size_hint().0);
         for row in rows {
-            let (env_name, secret_id, key_id) = row?;
+            let (env_name, secret_id, key_id, encrypted_value) = row?;
             env.push(WorkspaceEnv {
                 env_name,
-                value: self.key_value(&key_id)?,
+                value: decrypt_secret(&self.master_key, &encrypted_value)?,
                 secret_id,
                 key_id,
             });
@@ -185,7 +200,6 @@ impl AppStore {
 
     pub fn secret_env(&self, secret_id_or_name: &str) -> Result<Vec<WorkspaceEnv>> {
         let secret = self.resolve_secret(secret_id_or_name)?;
-        let keys = self.list_keys(Some(&secret.id))?;
         let mut env = Vec::new();
         if let Some(base_url) = secret.base_url {
             env.push(WorkspaceEnv {
@@ -203,18 +217,27 @@ impl AppStore {
                 key_id: String::new(),
             });
         }
-        for key in keys {
-            if !key.include_by_default {
-                continue;
-            }
-            let Some(env_name) = key.env_name.clone() else {
-                continue;
-            };
+        // Single query fetches encrypted_value for all default keys,
+        // eliminating the N+1 pattern from the old list_keys + key_value loop.
+        let mut stmt = self.conn.prepare(
+            "SELECT k.id, k.env_name, k.encrypted_value
+             FROM keys k
+             WHERE k.secret_id = ?1 AND k.include_by_default = 1 AND k.env_name IS NOT NULL",
+        )?;
+        let rows = stmt.query_map([secret.id.as_str()], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
+        })?;
+        for row in rows {
+            let (key_id, env_name, encrypted_value) = row?;
             env.push(WorkspaceEnv {
                 env_name,
-                value: self.key_value(&key.id)?,
-                secret_id: key.secret_id,
-                key_id: key.id,
+                value: decrypt_secret(&self.master_key, &encrypted_value)?,
+                secret_id: secret.id.clone(),
+                key_id,
             });
         }
         Ok(env)
