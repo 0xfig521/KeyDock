@@ -62,8 +62,9 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-          # Skip code signing on CI runner
-          APPLE_CODESIGN_IDENTITY: ""
+          # Ad-hoc sign Apple Silicon builds so downloaded apps are not treated as damaged.
+          # This is not Apple Developer ID signing/notarization; users may still need to allow the app in Privacy & Security.
+          APPLE_SIGNING_IDENTITY: "-"
           # Tauri v2 DMG bundler checks CI env; this forces it to proceed
           TAURI_BUNDLER_DMG_IGNORE_CI: "true"
 
