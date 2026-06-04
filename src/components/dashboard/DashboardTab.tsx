@@ -14,6 +14,8 @@ import {
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { ShellIntegrationCard } from "@/components/dashboard/ShellIntegrationCard"
+import { useShellIntegration } from "@/hooks/useShellIntegration"
 import type {
   Key,
   ActiveWorkspace,
@@ -72,6 +74,7 @@ export function DashboardTab({
 }: DashboardTabProps) {
   const { t } = useTranslation()
   const [recentLogs, setRecentLogs] = useState<AuditLog[]>([])
+  const shellIntegration = useShellIntegration()
 
   useEffect(() => {
     void audit.refresh()
@@ -239,6 +242,12 @@ export function DashboardTab({
           )}
         </div>
       </div>
+
+      <ShellIntegrationCard
+        status={shellIntegration.status}
+        onInstall={shellIntegration.install}
+        onRefresh={shellIntegration.refresh}
+      />
 
       {/* Stats Cards Grid */}
       <div className="grid grid-cols-2 gap-5">

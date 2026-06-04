@@ -71,8 +71,8 @@ export function SecretForm({
   }
 
   return (
-    <Card className="bg-muted/40 border-border max-w-xl shadow-lg p-0 overflow-hidden">
-      <CardHeader className="p-6 pb-4 border-b border-border gap-2">
+    <Card className="bg-muted/40 border-border max-w-3xl mx-auto shadow-lg p-0 overflow-hidden">
+      <CardHeader className="p-8 pb-5 border-b border-border gap-2">
         <CardTitle className="text-sm font-semibold">
           {isEditing ? t("secretForm.editTitle") : t("secretForm.newTitle")}
         </CardTitle>
@@ -83,8 +83,8 @@ export function SecretForm({
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4 p-6 text-xs">
-          <div className="grid grid-cols-2 gap-4">
+        <CardContent className="space-y-6 p-8 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_180px] gap-5">
             <div className="space-y-1">
               <label className="text-[10px] uppercase font-mono text-muted-foreground">
                 {t("secretForm.serviceName")} {t("secretForm.required")}
@@ -124,35 +124,39 @@ export function SecretForm({
                   </SelectGroup>
                 </SelectContent>
               </Select>
+            </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[11px] uppercase font-mono text-muted-foreground">
-              {t("secretForm.apiBaseUrl")} {t("secretForm.optional")}
-            </label>
-            <Input
-              value={form.baseUrl}
-              onChange={(e) => onChange({ ...form, baseUrl: e.target.value })}
-              placeholder={t("secretForm.urlPlaceholder")}
-              className="h-8 text-xs font-mono bg-background/50"
-            />
+          <div className="space-y-4 rounded-xl border border-border/70 bg-background/20 p-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1 col-span-2">
+                <label className="text-[11px] uppercase font-mono text-muted-foreground">
+                  {t("secretForm.apiBaseUrl")} {t("secretForm.optional")}
+                </label>
+                <Input
+                  value={form.baseUrl}
+                  onChange={(e) => onChange({ ...form, baseUrl: e.target.value })}
+                  placeholder={t("secretForm.urlPlaceholder")}
+                  className="h-8 text-xs font-mono bg-background/50"
+                />
+              </div>
+
+              <div className="space-y-1 col-span-2">
+                <label className="text-[11px] uppercase font-mono text-muted-foreground">
+                  {t("secretForm.tags")} {t("secretForm.tagsHint")}
+                </label>
+                <Input
+                  value={form.tags}
+                  onChange={(e) => onChange({ ...form, tags: e.target.value })}
+                  placeholder={t("secretForm.tagsPlaceholder")}
+                  className="h-8 text-xs bg-background/50"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[11px] uppercase font-mono text-muted-foreground">
-              {t("secretForm.tags")} {t("secretForm.tagsHint")}
-            </label>
-            <Input
-              value={form.tags}
-              onChange={(e) => onChange({ ...form, tags: e.target.value })}
-              placeholder={t("secretForm.tagsPlaceholder")}
-              className="h-8 text-xs bg-background/50"
-            />
-          </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1 col-span-2">
               <label className="text-[11px] uppercase font-mono text-muted-foreground">
                 {t("secretForm.dashboardUrl")} {t("secretForm.optional")}
               </label>
@@ -201,7 +205,7 @@ export function SecretForm({
             />
           </div>
         </CardContent>
-        <CardFooter className="p-6 py-4 flex justify-end gap-2 border-t border-border bg-muted/10">
+        <CardFooter className="p-8 py-5 flex justify-end gap-2 border-t border-border bg-muted/10">
           <Button
             type="button"
             variant="ghost"

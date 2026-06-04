@@ -138,7 +138,9 @@
     "valuePlaceholderEdit": "Leave blank to keep current value",
     "autoInclude": "Auto-include when exporting to workspaces",
     "expiresAt": "Expires At",
-    "expiresAtPlaceholder": "Optional expiration date"
+    "expiresAtPlaceholder": "Optional expiration date",
+    "showValue": "Show value",
+    "hideValue": "Hide value"
   },
   "keyForm.validation": {
     "nameRequired": "Key name is required",

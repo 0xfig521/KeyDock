@@ -138,7 +138,9 @@
     "valuePlaceholderEdit": "留空以保留当前值",
     "autoInclude": "导出到工作区时自动包含",
     "expiresAt": "过期时间",
-    "expiresAtPlaceholder": "选填，设置过期时间"
+    "expiresAtPlaceholder": "选填，设置过期时间",
+    "showValue": "显示值",
+    "hideValue": "隐藏值"
   },
   "keyForm.validation": {
     "nameRequired": "密钥名称为必填项",

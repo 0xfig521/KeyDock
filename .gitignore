@@ -11,3 +11,7 @@
 /.tauri/key.pem
 .omo/
 .engram/
+.opencode
+.antigravitycli
+.codegraph
+.codex

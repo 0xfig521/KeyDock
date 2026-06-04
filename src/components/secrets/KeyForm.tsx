@@ -1,5 +1,5 @@
 import { type FormEvent, useState, useRef, useEffect } from "react"
-import { CalendarIcon, XIcon } from "lucide-react"
+import { CalendarIcon, EyeIcon, EyeOffIcon, XIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
@@ -35,6 +35,7 @@ export function KeyForm({
 }: KeyFormProps) {
   const { t } = useTranslation()
   const [expiresAtOpen, setExpiresAtOpen] = useState(false)
+  const [showValue, setShowValue] = useState(false)
   const calendarRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -141,17 +142,28 @@ export function KeyForm({
           <label className="text-[10px] uppercase font-mono text-muted-foreground">
             {t("keyForm.value")} {editingKey ? "" : t("keyForm.required")}
           </label>
-          <Input
-            type="password"
-            value={form.value}
-            onChange={(e) => {
-              onChange({ ...form, value: e.target.value })
-              clearFieldError("value")
-            }}
-            onBlur={() => validateField("value", form)}
-            placeholder={editingKey ? t("keyForm.valuePlaceholderEdit") : t("keyForm.valuePlaceholder")}
-            className="h-8 text-xs bg-muted/80 font-mono"
-          />
+          <div className="flex items-center">
+            <Input
+              type={showValue ? "text" : "password"}
+              value={form.value}
+              onChange={(e) => {
+                onChange({ ...form, value: e.target.value })
+                clearFieldError("value")
+              }}
+              onBlur={() => validateField("value", form)}
+              placeholder={editingKey ? t("keyForm.valuePlaceholderEdit") : t("keyForm.valuePlaceholder")}
+              className="h-8 flex-1 text-xs bg-muted/80 font-mono rounded-r-none border-r-0 min-w-0"
+            />
+            <button
+              type="button"
+              onClick={() => setShowValue(!showValue)}
+              className="h-8 px-2.5 flex items-center justify-center border border-input rounded-r-lg bg-muted/80 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer shrink-0"
+              tabIndex={-1}
+              aria-label={showValue ? t("keyForm.hideValue") : t("keyForm.showValue")}
+            >
+              {showValue ? <EyeOffIcon className="size-3.5" /> : <EyeIcon className="size-3.5" />}
+            </button>
+          </div>
           <InlineError error={errors.value} />
         </div>
 

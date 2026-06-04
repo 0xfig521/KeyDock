@@ -4,8 +4,6 @@ import { useTranslation } from "react-i18next"
 import type { UseKeys } from "@/hooks/useKeys"
 import type { UseSecrets } from "@/hooks/useSecrets"
 import { useToast } from "@/hooks/useToast"
-import { useShellIntegration } from "@/hooks/useShellIntegration"
-import { ShellIntegrationCard } from "@/components/dashboard/ShellIntegrationCard"
 import { SecretDetails } from "./SecretDetails"
 import { SecretForm } from "./SecretForm"
 import { SecretList } from "./SecretList"
@@ -31,7 +29,6 @@ export function SecretsTab({
 }: SecretsTabProps) {
   const { t } = useTranslation()
   const { show } = useToast()
-  const shellIntegration = useShellIntegration()
 
   useEffect(() => {
     if (secrets.secrets.length === 0) return
@@ -138,11 +135,6 @@ export function SecretsTab({
         ) : (
           <div className="space-y-8">
             <PresetGrid onApply={handlePresetApply} />
-            <ShellIntegrationCard
-              status={shellIntegration.status}
-              onInstall={shellIntegration.install}
-              onRefresh={shellIntegration.refresh}
-            />
           </div>
         )}
       </div>

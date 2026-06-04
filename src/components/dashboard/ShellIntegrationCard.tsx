@@ -1,5 +1,6 @@
 import { PlugIcon, RefreshCwIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import type { ShellIntegrationStatus } from "@/types"
@@ -40,16 +41,25 @@ export function ShellIntegrationCard({
             {t("shellIntegration.description")}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onInstall}
-          disabled={status?.installed}
-          className="h-7 text-xs border-border text-muted-foreground hover:bg-accent shrink-0"
-        >
-          <PlugIcon className="size-3 mr-1.5" />
-          {status?.installed ? t("shellIntegration.installed") : t("shellIntegration.install")}
-        </Button>
+        {status?.installed ? (
+          <Badge
+            variant="secondary"
+            className="h-7 gap-1.5 rounded-md border-emerald-300 bg-emerald-100 px-3 text-xs text-emerald-600 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400"
+          >
+            <PlugIcon className="size-3" />
+            {t("shellIntegration.installed")}
+          </Badge>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onInstall}
+            className="h-7 text-xs border-border text-muted-foreground hover:bg-accent shrink-0"
+          >
+            <PlugIcon className="size-3 mr-1.5" />
+            {t("shellIntegration.install")}
+          </Button>
+        )}
       </div>
 
       <div className="flex items-center gap-2 text-[10px]">

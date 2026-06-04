@@ -53,8 +53,8 @@ function KeyCardImpl({
 
   return (
     <Card className="bg-muted/20 border-border hover:border-border transition-colors">
-      <CardContent className="p-3 grid gap-3 text-xs sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-        <div className="min-w-0 flex-1 space-y-2">
+      <CardContent className="p-3 space-y-3 text-xs">
+        <div className="min-w-0 space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-foreground truncate">{key_.name}</span>
             {key_.includeByDefault && (
@@ -118,7 +118,7 @@ function KeyCardImpl({
               <CodeIcon className="size-3.5 text-muted-foreground/70 shrink-0" />
             )}
             <code
-              className="font-mono text-[10px] text-muted-foreground truncate select-all cursor-pointer hover:text-foreground transition-colors flex items-center gap-1 min-w-0"
+              className="font-mono text-[10px] text-muted-foreground break-all select-all cursor-pointer hover:text-foreground transition-colors flex items-center gap-1 min-w-0"
               onClick={handleCopy}
               title={t("keyCard.clickToCopy")}
             >
@@ -127,12 +127,12 @@ function KeyCardImpl({
           </div>
         </div>
 
-        <div className="grid grid-cols-5 gap-1.5 sm:flex sm:items-center sm:justify-end sm:gap-0.5">
+        <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-border/50">
           <Button
             variant="outline"
             size="sm"
             onClick={() => onReveal(key_, workspaceIdForAudit)}
-            className="h-6 w-full p-0 border-border text-muted-foreground hover:text-foreground sm:w-6"
+            className="h-6 w-6 p-0 border-border text-muted-foreground hover:text-foreground"
             title={t("keyCard.reveal")}
           >
             <EyeIcon className="size-3" />
@@ -143,7 +143,7 @@ function KeyCardImpl({
               variant="outline"
               size="sm"
               onClick={() => onEdit(key_)}
-              className="h-6 w-full p-0 border-border text-muted-foreground hover:text-foreground sm:w-6"
+              className="h-6 w-6 p-0 border-border text-muted-foreground hover:text-foreground"
               title={t("keyCard.edit")}
             >
               <PencilIcon className="size-3" />
@@ -157,8 +157,8 @@ function KeyCardImpl({
             onClick={() => onActivate(key_)}
             className={
               isMappedInWorkspace
-                ? "h-6 w-full p-0 bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-30 sm:w-6"
-                : "h-6 w-full p-0 border-border text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/20 disabled:opacity-30 sm:w-6"
+                ? "h-6 w-6 p-0 bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-30"
+                : "h-6 w-6 p-0 border-border text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/20 disabled:opacity-30"
             }
             title={
               !key_.envName
@@ -177,7 +177,7 @@ function KeyCardImpl({
             variant="outline"
             size="sm"
             onClick={handleCopy}
-            className="h-6 w-full p-0 border-border text-muted-foreground hover:text-foreground sm:w-6"
+            className="h-6 w-6 p-0 border-border text-muted-foreground hover:text-foreground"
             title={t("keyCard.copyValue")}
           >
             {copiedText && revealed && copiedText === revealed ? (
@@ -191,7 +191,7 @@ function KeyCardImpl({
             variant="outline"
             size="sm"
             onClick={() => onDelete(key_)}
-            className="h-6 w-full p-0 border-border text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/20 sm:w-6"
+            className="h-6 w-6 p-0 border-border text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/20"
             title={t("keyCard.delete")}
           >
             <Trash2Icon className="size-3" />
