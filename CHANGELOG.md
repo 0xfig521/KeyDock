@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.4 - 2026-06-06
+
+### Fixes
+- Fix DMG bundling failure in CI by removing TAURI_BUNDLER_DMG_IGNORE_CI env var
+
 ## 0.5.0 - 2026-06-04
 
 ### Features
