@@ -14,7 +14,13 @@ export interface UpdateInfo {
   progress?: number
   /** Human-readable status message */
   status: "idle" | "checking" | "available" | "downloading" | "installing" | "done" | "error"
+  /** Error message when status is "error" */
+  errorMessage?: string
 }
+
+export type CheckResult =
+  | { ok: true; available: boolean }
+  | { ok: false; error: string }
 
 export function useUpdate() {
   const [update, setUpdate] = useState<UpdateInfo>({
@@ -23,8 +29,8 @@ export function useUpdate() {
     status: "idle",
   })
 
-  const checkForUpdates = useCallback(async (): Promise<boolean> => {
-    setUpdate((prev) => ({ ...prev, status: "checking" }))
+  const checkForUpdates = useCallback(async (): Promise<CheckResult> => {
+    setUpdate((prev) => ({ ...prev, status: "checking", errorMessage: undefined }))
     try {
       const result = await check()
       if (result?.available) {
@@ -35,18 +41,24 @@ export function useUpdate() {
           downloading: false,
           status: "available",
         })
-        return true
+        return { ok: true, available: true }
       } else {
         setUpdate({
           available: false,
           downloading: false,
           status: "idle",
         })
-        return false
+        return { ok: true, available: false }
       }
-    } catch {
-      setUpdate((prev) => ({ ...prev, status: "idle" }))
-      return false
+    } catch (e) {
+      const message = extractUpdaterError(e)
+      console.error("[updater] check failed:", e)
+      setUpdate((prev) => ({
+        ...prev,
+        status: "error",
+        errorMessage: message,
+      }))
+      return { ok: false, error: message }
     }
   }, [])
 
@@ -55,7 +67,7 @@ export function useUpdate() {
       const result = await check()
       if (!result?.available) return
 
-      setUpdate((prev) => ({ ...prev, status: "downloading", downloading: true }))
+      setUpdate((prev) => ({ ...prev, status: "downloading", downloading: true, errorMessage: undefined }))
 
       await result.downloadAndInstall((event) => {
         switch (event.event) {
@@ -73,11 +85,14 @@ export function useUpdate() {
       })
 
       setUpdate((prev) => ({ ...prev, status: "installing", downloading: false }))
-    } catch {
+    } catch (e) {
+      const message = extractUpdaterError(e)
+      console.error("[updater] install failed:", e)
       setUpdate((prev) => ({
         ...prev,
         downloading: false,
         status: "error",
+        errorMessage: message,
       }))
     }
   }, [])
@@ -89,4 +104,22 @@ export function useUpdate() {
   }, [checkForUpdates])
 
   return { update, checkForUpdates, installUpdate }
+}
+
+function extractUpdaterError(e: unknown): string {
+  if (typeof e === "string") return e
+  if (e instanceof Error) {
+    const m = e.message.toLowerCase()
+    // Common Tauri updater error patterns
+    if (m.includes("timeout") || m.includes("timed out") || m.includes("eai_again") || m.includes("dns"))
+      return "network_error"
+    if (m.includes("signature") || m.includes("publickey") || m.includes("pubkey"))
+      return "signature_error"
+    if (m.includes("tls") || m.includes("ssl") || m.includes("certificate"))
+      return "tls_error"
+    if (m.includes("json") || m.includes("parse") || m.includes("unexpected"))
+      return "parse_error"
+    return e.message
+  }
+  return "unknown_error"
 }

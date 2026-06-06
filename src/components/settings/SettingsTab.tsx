@@ -12,6 +12,17 @@ interface SettingsTabProps {
   onInstallUpdate: () => void
 }
 
+/** Map updater error codes from useUpdate to i18n keys */
+function errorMessageKey(errorMessage?: string): string {
+  switch (errorMessage) {
+    case "network_error": return "settings.updateNetworkError"
+    case "signature_error": return "settings.updateSignatureError"
+    case "tls_error": return "settings.updateTlsError"
+    case "parse_error": return "settings.updateParseError"
+    default: return "settings.updateError"
+  }
+}
+
 export function SettingsTab({
   update,
   currentVersion,
@@ -170,7 +181,7 @@ export function SettingsTab({
 
               {update.status === "error" && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-red-500">{t("settings.updateError")}</span>
+                  <span className="text-xs text-red-500">{t(errorMessageKey(update.errorMessage))}</span>
                   <button
                     onClick={onCheckUpdate}
                     className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"

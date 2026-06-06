@@ -30,7 +30,7 @@ function KeyCardImpl({
 }: KeyCardProps) {
   const { t } = useTranslation()
   const { copiedText, copy } = useClipboard()
-  const displayValue = revealed ?? "••••"
+  const displayValue = revealed ?? key_.preview ?? "••••"
   const isMappedInWorkspace =
     activeWorkspace?.sourceType === "workspace" &&
     (activeWorkspace.envNames ?? []).includes(key_.envName ?? "")

@@ -116,11 +116,11 @@
     "namePlaceholder": "例如：OpenRouter",
     "urlPlaceholder": "例如：https://api.openrouter.ai/api/v1",
     "tagsPlaceholder": "例如：ai, production",
-    "descPlaceholder": "这个服务的用途是什么？"
-  },
-  "secretForm.validation": {
-    "nameRequired": "服务名称为必填项",
-    "nameEmpty": "服务名称不能为空"
+    "descPlaceholder": "这个服务的用途是什么？",
+    "validation": {
+      "nameRequired": "服务名称为必填项",
+      "nameEmpty": "服务名称不能为空"
+    }
   },
   "keyForm": {
     "editTitle": "编辑密钥",
@@ -140,14 +140,14 @@
     "expiresAt": "过期时间",
     "expiresAtPlaceholder": "选填，设置过期时间",
     "showValue": "显示值",
-    "hideValue": "隐藏值"
-  },
-  "keyForm.validation": {
-    "nameRequired": "密钥名称为必填项",
-    "nameEmpty": "密钥名称不能为空",
-    "envFormat": "必须是大写字母加下划线（例如：OPENAI_API_KEY）",
-    "valueRequired": "密钥值为必填项",
-    "valueEmpty": "密钥值不能为空"
+    "hideValue": "隐藏值",
+    "validation": {
+      "nameRequired": "密钥名称为必填项",
+      "nameEmpty": "密钥名称不能为空",
+      "envFormat": "必须是大写字母加下划线（例如：OPENAI_API_KEY）",
+      "valueRequired": "密钥值为必填项",
+      "valueEmpty": "密钥值不能为空"
+    }
   },
   "keyCard": {
     "autoInclude": "自动包含",
@@ -283,6 +283,10 @@
     "downloading": "正在下载...",
     "installing": "正在安装...",
     "updateError": "更新检查失败，请重试。",
+    "updateNetworkError": "无法连接更新服务器，请检查网络连接后重试。",
+    "updateSignatureError": "更新包签名验证失败，安装已中止。",
+    "updateTlsError": "安全连接失败，请检查系统时间和证书。",
+    "updateParseError": "更新信息格式异常。",
     "updateDone": "更新已安装，请重启 KeyDock。"
   },
   "toast": {

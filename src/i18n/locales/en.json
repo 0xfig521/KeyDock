@@ -116,11 +116,11 @@
     "namePlaceholder": "e.g. OpenRouter",
     "urlPlaceholder": "e.g. https://api.openrouter.ai/api/v1",
     "tagsPlaceholder": "e.g. ai, production",
-    "descPlaceholder": "What is this service used for?"
-  },
-  "secretForm.validation": {
-    "nameRequired": "Service name is required",
-    "nameEmpty": "Service name cannot be empty"
+    "descPlaceholder": "What is this service used for?",
+    "validation": {
+      "nameRequired": "Service name is required",
+      "nameEmpty": "Service name cannot be empty"
+    }
   },
   "keyForm": {
     "editTitle": "Edit Key",
@@ -140,14 +140,14 @@
     "expiresAt": "Expires At",
     "expiresAtPlaceholder": "Optional expiration date",
     "showValue": "Show value",
-    "hideValue": "Hide value"
-  },
-  "keyForm.validation": {
-    "nameRequired": "Key name is required",
-    "nameEmpty": "Key name cannot be empty",
-    "envFormat": "Must be UPPERCASE with underscores (e.g. OPENAI_API_KEY)",
-    "valueRequired": "Key value is required",
-    "valueEmpty": "Key value cannot be empty"
+    "hideValue": "Hide value",
+    "validation": {
+      "nameRequired": "Key name is required",
+      "nameEmpty": "Key name cannot be empty",
+      "envFormat": "Must be UPPERCASE with underscores (e.g. OPENAI_API_KEY)",
+      "valueRequired": "Key value is required",
+      "valueEmpty": "Key value cannot be empty"
+    }
   },
   "keyCard": {
     "autoInclude": "Auto-include",
@@ -283,6 +283,10 @@
     "downloading": "Downloading...",
     "installing": "Installing...",
     "updateError": "Update check failed. Please try again.",
+    "updateNetworkError": "Cannot reach update server. Please check your network connection.",
+    "updateSignatureError": "Update package signature verification failed.",
+    "updateTlsError": "Secure connection failed. Please check system time and certificates.",
+    "updateParseError": "Update manifest could not be parsed.",
     "updateDone": "Update installed. Please restart KeyDock."
   },
   "toast": {

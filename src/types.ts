@@ -86,7 +86,12 @@ export interface WorkspaceVariable {
   keyId: string
   keyName?: string | null
   envName: string
+  preview?: string | null
   enabled: boolean
+  required: boolean
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
 }
 
 export interface ActiveWorkspace {

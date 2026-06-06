@@ -126,6 +126,7 @@ pub struct WorkspaceVariable {
     pub key_id: String,
     pub key_name: Option<String>,
     pub env_name: String,
+    pub preview: Option<String>,
     pub enabled: bool,
     pub required: bool,
     pub sort_order: i64,

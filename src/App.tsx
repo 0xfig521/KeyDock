@@ -98,11 +98,13 @@ export function App() {
   }
 
   const handleCheckUpdate = useCallback(async () => {
-    const hasUpdate = await checkForUpdates()
-    if (hasUpdate) {
+    const result = await checkForUpdates()
+    if (result.ok && result.available) {
       show(t("settings.updateAvailable"), "info")
-    } else {
+    } else if (result.ok) {
       show(t("settings.upToDate"), "success")
+    } else {
+      show(t("settings.updateError"), "error")
     }
   }, [checkForUpdates, show, t])
 

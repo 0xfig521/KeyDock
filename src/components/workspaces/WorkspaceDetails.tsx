@@ -102,8 +102,8 @@ export function WorkspaceDetails({
                       {v.envName}
                     </span>
                     <span className="text-muted-foreground">=</span>
-                    <span className="text-muted-foreground truncate">
-                      ···
+                    <span className="text-muted-foreground truncate font-mono">
+                      {v.preview ?? "···"}
                     </span>
                     {v.secretName && (
                       <span className="text-[9px] text-muted-foreground shrink-0 ml-auto">

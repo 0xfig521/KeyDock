@@ -1,5 +1,5 @@
 use super::shell::{format_env, write_active_env};
-use super::{log_audit, now, validate_env_name, with_tx, AppStore};
+use super::{log_audit, mask_value, now, validate_env_name, with_tx, AppStore};
 use crate::{decrypt_secret, ActiveWorkspace, Workspace, WorkspaceEnv, WorkspaceVariable};
 use anyhow::{anyhow, Result};
 use rusqlite::{params, OptionalExtension};
@@ -139,8 +139,11 @@ impl AppStore {
              ORDER BY wv.sort_order, wv.env_name COLLATE NOCASE",
         )?;
         let rows = stmt.query_map([workspace.id], row_to_workspace_variable)?;
-        rows.collect::<rusqlite::Result<Vec<_>>>()
-            .map_err(Into::into)
+        let mut variables: Vec<WorkspaceVariable> = rows.collect::<rusqlite::Result<Vec<_>>>()?;
+        for variable in &mut variables {
+            fill_variable_preview(self, variable);
+        }
+        Ok(variables)
     }
 
     pub fn delete_workspace_variable(
@@ -301,12 +304,21 @@ pub(crate) fn row_to_workspace_variable(
         key_id: row.get(4)?,
         key_name: row.get(5)?,
         env_name: row.get(6)?,
+        preview: None,
         enabled: row.get::<_, i64>(7)? == 1,
         required: row.get::<_, i64>(8)? == 1,
         sort_order: row.get(9)?,
         created_at: row.get(10)?,
         updated_at: row.get(11)?,
     })
+}
+
+/// Fill the `preview` field on a `WorkspaceVariable` by decrypting the
+/// associated key's value and masking it (first 4 •••• last 4).
+pub(crate) fn fill_variable_preview(store: &AppStore, variable: &mut WorkspaceVariable) {
+    if let Ok(value) = store.key_value(&variable.key_id) {
+        variable.preview = Some(mask_value(&value));
+    }
 }
 
 fn row_to_workspace(row: &rusqlite::Row<'_>) -> rusqlite::Result<Workspace> {

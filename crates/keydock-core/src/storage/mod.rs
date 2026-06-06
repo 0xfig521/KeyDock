@@ -87,8 +87,9 @@ impl AppStore {
         workspace_id: &str,
         env_name: &str,
     ) -> Result<Option<WorkspaceVariable>> {
-        use workspaces::row_to_workspace_variable;
-        self.conn
+        use workspaces::{fill_variable_preview, row_to_workspace_variable};
+        let mut variable = self
+            .conn
             .query_row(
                 "SELECT wv.id, wv.workspace_id, wv.secret_id, s.name, wv.key_id, k.name, wv.env_name, wv.enabled,
                  wv.required, wv.sort_order, wv.created_at, wv.updated_at
@@ -99,8 +100,11 @@ impl AppStore {
                 params![workspace_id, env_name],
                 row_to_workspace_variable,
             )
-            .optional()
-            .map_err(Into::into)
+            .optional()?;
+        if let Some(ref mut v) = variable {
+            fill_variable_preview(self, v);
+        }
+        Ok(variable)
     }
 }
 
@@ -152,11 +156,10 @@ pub(crate) const KEY_SELECT: &str =
 k.tags_json, k.description, k.created_at, k.updated_at
 FROM keys k JOIN secrets s ON s.id = k.secret_id";
 
-#[allow(dead_code)]
 /// Mask a value for display: show first 4 and last 4 characters,
 /// with `••••` in between.  Values ≤ 8 characters are entirely
 /// replaced with `••••` to prevent short tokens / PINs from leaking.
-fn mask_value(value: &str) -> String {
+pub(crate) fn mask_value(value: &str) -> String {
     let len = value.len();
     if len <= 8 {
         return "••••".to_string();

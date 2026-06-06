@@ -1,4 +1,6 @@
-use super::{bool_to_i64, log_audit, now, validate_env_name, with_tx, AppStore, KEY_SELECT};
+use super::{
+    bool_to_i64, log_audit, mask_value, now, validate_env_name, with_tx, AppStore, KEY_SELECT,
+};
 use crate::{encrypt_secret, Key, KeyInput};
 use anyhow::{anyhow, Result};
 use rusqlite::{params, OptionalExtension};
@@ -37,7 +39,7 @@ impl AppStore {
     }
 
     pub fn list_keys(&self, secret_id_or_name: Option<&str>) -> Result<Vec<Key>> {
-        let keys = if let Some(secret_id_or_name) = secret_id_or_name {
+        let mut keys = if let Some(secret_id_or_name) = secret_id_or_name {
             let secret = self.resolve_secret(secret_id_or_name)?;
             let mut stmt = self.conn.prepare(
                 &(KEY_SELECT.to_owned() + " WHERE k.secret_id = ?1 ORDER BY k.name COLLATE NOCASE"),
@@ -51,9 +53,12 @@ impl AppStore {
             let rows = stmt.query_map([], row_to_key)?;
             rows.collect::<rusqlite::Result<Vec<_>>>()?
         };
-        // Preview is intentionally not set here — the UI must call
-        // reveal_key() to obtain the plaintext.  This avoids decrypting
-        // every key on every list refresh (security + performance).
+        // Compute masked preview (first 4 •••• last 4) for each key.
+        for key in &mut keys {
+            if let Ok(value) = self.key_value(&key.id) {
+                key.preview = Some(mask_value(&value));
+            }
+        }
         Ok(keys)
     }
 

@@ -142,7 +142,7 @@ export function KeyForm({
           <label className="text-[10px] uppercase font-mono text-muted-foreground">
             {t("keyForm.value")} {editingKey ? "" : t("keyForm.required")}
           </label>
-          <div className="flex items-center">
+          <div className="relative">
             <Input
               type={showValue ? "text" : "password"}
               value={form.value}
@@ -152,17 +152,19 @@ export function KeyForm({
               }}
               onBlur={() => validateField("value", form)}
               placeholder={editingKey ? t("keyForm.valuePlaceholderEdit") : t("keyForm.valuePlaceholder")}
-              className="h-8 flex-1 text-xs bg-muted/80 font-mono rounded-r-none border-r-0 min-w-0"
+              className="h-8 text-xs bg-muted/80 font-mono pr-9"
             />
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setShowValue(!showValue)}
-              className="h-8 px-2.5 flex items-center justify-center border border-input rounded-r-lg bg-muted/80 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer shrink-0"
+              className="absolute right-0.5 top-1/2 -translate-y-1/2 text-muted-foreground"
               tabIndex={-1}
               aria-label={showValue ? t("keyForm.hideValue") : t("keyForm.showValue")}
             >
               {showValue ? <EyeOffIcon className="size-3.5" /> : <EyeIcon className="size-3.5" />}
-            </button>
+            </Button>
           </div>
           <InlineError error={errors.value} />
         </div>
