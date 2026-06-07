@@ -1,0 +1,43 @@
+# Build web/ (landing page) and deploy to Cloudflare Pages.
+# Triggered by pushes to main affecting web/ or manually via workflow_dispatch.
+
+name: Deploy Web
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "web/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run build
+
+      - name: Deploy to Cloudflare Pages
+        run: bunx wrangler pages deploy dist --project-name=keydock
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
