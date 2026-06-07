@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://keydock.0xfig.xyz/sitemap.xml

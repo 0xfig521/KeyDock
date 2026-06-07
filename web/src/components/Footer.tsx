@@ -44,10 +44,10 @@ export function Footer({
             strings attached.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
             <a
               href={primaryCta.href}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 hover:shadow-lg"
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 hover:shadow-lg"
             >
               {primaryCta.label}
               <ArrowRight className="h-4 w-4" />
@@ -55,7 +55,7 @@ export function Footer({
 
             <a
               href={secondaryCta.href}
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-3 text-sm font-semibold transition-all hover:border-primary/30 hover:shadow-lg"
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-3 text-sm font-semibold transition-all hover:border-primary/30 hover:shadow-lg"
             >
               <Star className="h-4 w-4 text-primary" />
               {secondaryCta.label}

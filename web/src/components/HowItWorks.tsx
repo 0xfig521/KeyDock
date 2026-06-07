@@ -74,7 +74,7 @@ export function HowItWorks() {
           From vault to environment in two commands.
         </p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
           {/* Terminal mockup - 3/5 width */}
           <div className="lg:col-span-3 rounded-xl overflow-hidden border border-border bg-[#0a0a0b]">
             {/* Window chrome */}
@@ -88,7 +88,7 @@ export function HowItWorks() {
             </div>
 
             {/* Terminal content */}
-            <div className="p-5 font-mono text-sm leading-relaxed min-h-[18rem]">
+            <div className="p-4 sm:p-5 font-mono text-sm leading-relaxed min-h-[18rem] overflow-x-auto">
               {terminalLines.slice(0, visibleLines).map((line, i) => {
                 if (line.type === "empty") return <div key={i}>&nbsp;</div>;
                 if (line.type === "comment") {

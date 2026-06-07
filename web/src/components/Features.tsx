@@ -54,7 +54,7 @@ function FeatureBlock({
     <div
       ref={ref}
       className={cn(
-        "grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center mb-24 last:mb-0",
+        "grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-16 items-center mb-16 md:mb-24 last:mb-0",
         "transition-all duration-700 ease-out",
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
       )}
@@ -69,7 +69,7 @@ function FeatureBlock({
           <p className="text-muted-foreground leading-relaxed">{description}</p>
         </div>
       )}
-      <div className="bg-card border border-border rounded-xl h-64 flex items-center justify-center text-muted-foreground">
+      <div className="bg-card border border-border rounded-xl h-48 md:h-64 flex items-center justify-center text-muted-foreground">
         Feature illustration
       </div>
       {imagePosition === "left" && (
@@ -89,6 +89,14 @@ export function Features() {
   return (
     <section id="features" className="py-16 md:py-24 scroll-mt-16">
       <div className="max-w-6xl mx-auto px-4">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+            Why KeyDock?
+          </h2>
+          <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
+            Four capabilities that change how you handle secrets every day.
+          </p>
+        </div>
         {features.map((feature, i) => (
           <FeatureBlock
             key={feature.title}

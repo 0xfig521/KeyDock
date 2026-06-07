@@ -62,23 +62,23 @@ export function Hero({
             </p>
 
             {/* CTA buttons */}
-            <div className="mt-8 flex flex-wrap items-center justify-center lg:justify-start gap-4">
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4">
               <a
                 href={primaryCta.href}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-all shadow-lg shadow-primary/25"
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-all shadow-lg shadow-primary/25"
               >
                 {primaryCta.label}
               </a>
               <a
                 href={secondaryCta.href}
-                className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-3 text-sm font-semibold text-foreground hover:bg-accent transition-colors"
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-3 text-sm font-semibold text-foreground hover:bg-accent transition-colors"
               >
                 {secondaryCta.label}
               </a>
             </div>
 
             {/* Trust markers */}
-            <div className="mt-10 flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-3 text-sm text-muted-foreground">
+            <div className="mt-10 grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-3 text-sm text-muted-foreground">
               {trustMarkers.map((marker) => (
                 <span
                   key={marker.label}
@@ -93,7 +93,7 @@ export function Hero({
 
           {/* Screenshot side */}
           <div className="relative flex justify-center lg:justify-end">
-            <div className="relative w-full max-w-lg">
+            <div className="relative w-full max-w-sm sm:max-w-lg">
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute -inset-4 rounded-2xl bg-primary/10 blur-2xl opacity-60"
