@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Lock, GitFork, Star, Menu, X } from "lucide-react";
+import { GitFork, Star, Menu, X } from "lucide-react";
 
 const navLinks = [
   { label: "Features", href: "#features" },
@@ -13,7 +13,11 @@ function handleSmoothScroll(e: React.MouseEvent<HTMLAnchorElement>, href: string
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 }
 
-export function Navigation() {
+interface NavigationProps {
+  starCount?: number;
+}
+
+export function Navigation({ starCount }: NavigationProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -24,7 +28,11 @@ export function Navigation() {
           href="#"
           className="flex items-center gap-2 text-foreground font-semibold"
         >
-          <Lock className="h-5 w-5 text-primary" />
+          <img
+            src="/icon.png"
+            alt="KeyDock"
+            className="h-6 w-6"
+          />
           <span className="text-sm md:text-base">KeyDock</span>
         </a>
 
@@ -54,11 +62,11 @@ export function Navigation() {
             <GitFork className="h-4 w-4" />
             <span className="flex items-center gap-1">
               <Star className="h-3 w-3 fill-current" />
-              500+
+              {starCount ?? 0}
             </span>
           </a>
           <a
-            href="#download"
+            href="https://github.com/0xfig-labs/KeyDock/releases"
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
           >
             Download
@@ -103,12 +111,12 @@ export function Navigation() {
               >
             <GitFork className="h-4 w-4" />
                 <Star className="h-3 w-3 fill-current" />
-                Star on GitHub
+                {starCount ?? 0} stars
               </a>
             </li>
             <li>
               <a
-                href="#download"
+                href="https://github.com/0xfig-labs/KeyDock/releases"
                 className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
               >
                 Download

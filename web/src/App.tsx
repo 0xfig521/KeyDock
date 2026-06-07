@@ -8,8 +8,14 @@ import { UseCases } from "@/components/UseCases";
 import { Pricing } from "@/components/Pricing";
 import { FAQ } from "@/components/FAQ";
 import { Footer } from "@/components/Footer";
+import { useGitHubStats } from "@/hooks/useGitHubStats";
+
+const RELEASES_URL = "https://github.com/0xfig-labs/KeyDock/releases";
+const GITHUB_URL = "https://github.com/0xfig-labs/KeyDock";
 
 function App() {
+  const { stars, downloads, loading } = useGitHubStats("0xfig-labs", "KeyDock");
+
   return (
     <>
       {/* JSON-LD structured data */}
@@ -29,17 +35,17 @@ function App() {
         }}
       />
 
-      <Navigation />
+      <Navigation starCount={loading ? undefined : stars} />
       <Hero
-        primaryCta={{ label: "Download for free", href: "/download" }}
-        secondaryCta={{ label: "View on GitHub", href: "https://github.com/0xfig-labs/KeyDock" }}
+        primaryCta={{ label: "Download for free", href: RELEASES_URL }}
+        secondaryCta={{ label: "View on GitHub", href: GITHUB_URL }}
         screenshotSrc="/hero-screenshot.png"
       />
       <SocialProof
         quote="Switching between AI API providers used to mean hunting through .bash_history for that one key export. Now it is one `keydock activate`."
         attribution="Developer, early adopter"
-        stars={500}
-        downloads={2000}
+        stars={loading ? 0 : stars}
+        downloads={loading ? 0 : downloads}
       />
       <Features />
       <HowItWorks />
@@ -54,8 +60,8 @@ function App() {
           "Shell integration",
           "Presets",
         ]}
-        primaryCta={{ label: "Download on GitHub", href: "https://github.com/0xfig-labs/KeyDock" }}
-        secondaryCta={{ label: "Star on GitHub", href: "https://github.com/0xfig-labs/KeyDock" }}
+        primaryCta={{ label: "Download on GitHub", href: RELEASES_URL }}
+        secondaryCta={{ label: "Star on GitHub", href: GITHUB_URL }}
       />
       <FAQ />
       <Footer />
