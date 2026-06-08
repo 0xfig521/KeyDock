@@ -2,10 +2,15 @@
 # Triggered by pushing a tag like v0.2.0.
 #
 # Prerequisites:
-#   1. Add the following secrets to GitHub:
-#      - TAURI_PRIVATE_KEY   – contents of .tauri/key.pem
-#      - TAURI_KEY_PASSWORD  – (empty here; set if you used a password)
-#   2. Push a tag:  git tag v0.2.0 && git push origin v0.2.0
+#   1. Generate signing keypair: cargo tauri signer generate -w .tauri/key
+#   2. Set GitHub secret matching the generated key:
+#        gh secret set TAURI_PRIVATE_KEY < .tauri/key
+#      The pubkey in src-tauri/tauri.conf.json must match .tauri/key.pub.
+#   3. Push a tag:  git tag v0.6.1 && git push origin v0.6.1
+#
+#   NOTE: Tauri v2 maps these env vars as follows:
+#     TAURI_SIGNING_PRIVATE_KEY         ← GitHub secret TAURI_PRIVATE_KEY
+#     TAURI_SIGNING_PRIVATE_KEY_PASSWORD ← GitHub secret TAURI_KEY_PASSWORD
 
 name: Release
 on:
