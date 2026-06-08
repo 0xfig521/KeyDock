@@ -25,6 +25,9 @@ impl AppStore {
         self.run_migration(8, "replace_preset_with_preset", |s| {
             s.migrate_v8_replace_preset_with_preset()
         })?;
+        self.run_migration(9, "add_preset_id_to_audit_logs", |s| {
+            s.migrate_v9_add_preset_id_to_audit_logs()
+        })?;
 
         Ok(())
     }
@@ -246,6 +249,21 @@ impl AppStore {
              DROP TABLE IF EXISTS presets;
              PRAGMA foreign_keys = ON;",
         )?;
+        Ok(())
+    }
+
+    // ── V9: add preset_id to audit_logs ─────────────────────────────────
+    //
+    // Databases created before migration V1 may have an audit_logs table
+    // that predates the preset_id column.  Since V1 uses CREATE TABLE IF
+    // NOT EXISTS, existing tables are not altered.  This migration fills
+    // the gap for databases that have been upgraded across versions.
+
+    fn migrate_v9_add_preset_id_to_audit_logs(&self) -> Result<()> {
+        if !self.column_exists("audit_logs", "preset_id")? {
+            self.conn
+                .execute_batch("ALTER TABLE audit_logs ADD COLUMN preset_id TEXT;")?;
+        }
         Ok(())
     }
 

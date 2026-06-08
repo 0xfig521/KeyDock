@@ -1,13 +1,13 @@
 # KeyDock 下一阶段发展路线
 
-> 状态：草案  
-> 适用阶段：v0.6 → v1.0  
+> 状态：v0.6.0 已发布，路线进入执行更新  
+> 适用阶段：v0.6.1 → v1.0  
 > 仓库：[0xfig-labs/KeyDock](https://github.com/0xfig-labs/KeyDock)  
 > 官网：https://keydock.0xfig.xyz
 
 ## 1. 一句话方向
 
-KeyDock 的产品主概念收敛为 **Presets**：Preset 是可复用、可组合、可激活、可替换的全局环境变量合集。旧的 Preset / Global Profile 概念不再作为顶层产品概念出现。
+KeyDock 的产品主概念已收敛为 **Presets**：Preset 是可复用、可组合、可激活、可替换的全局环境变量合集。额外的 Global Profile 等概念不再作为顶层产品概念出现。
 
 KeyDock 下一阶段应聚焦为：
 
@@ -34,14 +34,17 @@ KeyDock 下一阶段应聚焦为：
 - **官网**：`web/` 已有 landing page，并通过 Cloudflare Pages 部署。
 - **发布流程**：tag `v*` 触发 GitHub Actions release，自动构建 DMG 与 updater metadata。
 
-### 2.2 刚完成的基础修正
+### 2.2 v0.6.0 已完成的关键进展
 
-- 根 `package.json` 版本已对齐到 `0.5.4`。
-- preset repository 已指向 `https://github.com/0xfig-labs/KeyDock`。
-- Tauri updater endpoint 已改为 `0xfig-labs/KeyDock`。
-- release workflow 生成的 `update.json` 下载地址已改为 `0xfig-labs/KeyDock`。
-- `web/README.md` 已从 Vite 模板说明替换成 KeyDock 官网开发/部署说明。
-- 英文/中文 README 已补充 AI-agent-safe 定位与 v0.6/v0.7 路线图。
+- 版本已发布到 `v0.6.0`，tag push 已触发 CI release workflow。
+- 版本文件已对齐到 `0.6.0`：根 `package.json`、Tauri 配置、Rust crates 与 `Cargo.lock`。
+- 产品主线已从旧 Key 模型迁移到 **Secrets + Secret Fields + Presets**。
+- Preset 已承担环境变量合集、组合、预览、激活、停用和 `keydock run` 注入能力。
+- Secret Field 已支持普通字段、敏感字段、ENV 字段，并可映射到 Preset Entry。
+- 已移除产品层面的旧环境管理术语，App、README、官网和 docs 统一使用 Preset。
+- 官网 SEO 与 landing page 文案已围绕本地 API Key vault、reusable env presets、AI-agent-safe scoped injection 更新。
+- 已修复活跃 preset 在映射或字段变化后的 env 刷新问题。
+- 发布前验证已通过：主应用 build、web build、web lint、Rust `cargo check`。
 
 ### 2.3 当前主要短板
 
@@ -288,9 +291,9 @@ CARGO_TARGET_DIR=/Users/icehugh/preset/KeyDock/target/codex-check cargo test --p
 - [ ] onboarding 完成。
 - [ ] demo preset 完成。
 - [ ] updater/release 链路验证。
-- [ ] changelog 更新。
-- [ ] 版本号更新。
-- [ ] tag `v0.6.0`。
+- [x] changelog 更新。
+- [x] 版本号更新。
+- [x] tag `v0.6.0`。
 - [ ] GitHub Release assets 正常。
 - [ ] 官网下载链接正常。
 
@@ -732,29 +735,29 @@ From .env sprawl to preset-based secrets
 
 ## 14. 下一步执行清单
 
-### 本周
+当前详细执行计划见：[`docs/NEXT_STEPS.md`](./NEXT_STEPS.md)。
 
-- [ ] 新建 v0.6 issue / milestone。
-- [ ] 设计 onboarding flow。
-- [ ] 准备 3 张官网截图或 GIF 脚本。
-- [ ] 补充 README 安装说明与 macOS unsigned 说明。
-- [ ] 增加 `docs/THREAT_MODEL.md` 草案。
+### v0.6.1：Launch polish
 
-### 接下来两周
+- [ ] 检查 `v0.6.0` GitHub Release assets、DMG、updater metadata 和下载链接。
+- [ ] 设计并实现 first-run onboarding。
+- [ ] 增加 sample preset / demo data，支持一键创建和清除。
+- [ ] 官网补真实截图或 GIF：Secret Field、Preset mapping、CLI injection。
+- [ ] README 补充安装提示、macOS ad-hoc signing 说明和更短 Quick Start。
 
-- [ ] 实现 first-run onboarding。
-- [ ] 实现 demo preset。
-- [ ] 官网加入截图/GIF。
-- [ ] 增强 Settings 里的版本与 release link。
-- [ ] 准备 `v0.6.0` changelog。
+### v0.7.0：AI-agent-safe mode
 
-### 一个月内
+- [ ] 实现 `keydock plan <preset> -- <cmd>` 注入预览。
+- [ ] 设计 PresetPolicy 数据模型与 migration。
+- [ ] 实现 command-scoped allowlist / deny / confirm。
+- [ ] 增加 agent profiles：Codex、Claude Code、Cursor、Generic Shell。
+- [ ] 实现 stdout/stderr redaction，默认隐藏已注入 secret values。
+- [ ] 扩展 audit events：preset_run、env_injected、policy_denied、redaction_applied、agent_profile_used。
 
-- [ ] 设计 preset policy 数据模型。
-- [ ] 实现 `keydock plan <preset> -- <cmd>`。
-- [ ] 实现 CLI redaction prototype。
-- [ ] 实现 audit event 扩展。
-- [ ] 发布第一篇 launch/post。
+### 暂缓
+
+- [ ] 云同步、团队账号、RBAC、企业审计导出。
+- [ ] Local HTTP API、插件市场、system-wide env 写入。
 
 ## 15. 成功标准
 

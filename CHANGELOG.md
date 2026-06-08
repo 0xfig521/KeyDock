@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1 - 2026-06-08
+
+### Fixes
+- Fix database migration gap: add missing `preset_id` column to `audit_logs` for databases upgraded from older versions, preventing crash on audit log view.
+
 ## 0.6.0 - 2026-06-08
 
 ### Features
