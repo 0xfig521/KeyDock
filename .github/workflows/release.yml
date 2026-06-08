@@ -124,7 +124,7 @@ jobs:
             --arg v "$VERSION" \
             --arg date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --arg sig "$SIG" \
-            --arg url "https://github.com/0xfig521/KeyDock/releases/download/${{ github.ref_name }}/KeyDock-aarch64.dmg" \
+            --arg url "https://github.com/0xfig-labs/KeyDock/releases/download/${{ github.ref_name }}/KeyDock-aarch64.dmg" \
             '{
               version: $v,
               pub_date: $date,

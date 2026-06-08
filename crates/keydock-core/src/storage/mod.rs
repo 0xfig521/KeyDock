@@ -1,23 +1,25 @@
+use crate::Secret;
 #[cfg(test)]
-use crate::WorkspaceEnv;
-use crate::{decrypt_secret, Secret, Workspace, WorkspaceVariable};
+use crate::PresetEnv;
 use anyhow::{anyhow, Context, Result};
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::Connection;
 use std::path::PathBuf;
 use time::OffsetDateTime;
 
 pub mod audit;
-pub mod keys;
+pub mod presets;
 pub mod schema;
+pub mod secret_fields;
 pub mod secrets;
 pub mod shell;
-pub mod workspaces;
 
 // Re-export public free functions from shell sub-module so the crate root can
 // still re-export them via `pub use storage::{...}`.
+pub use presets::list_preset_templates;
 pub use shell::{
-    active_env_path, active_workspace_path, current_active_workspace, deactivate_workspace,
-    format_env, format_shell_exports, install_shell_hook, shell_hook, shell_integration_status,
+    active_env_path, active_preset_path, current_active_preset, deactivate_active_preset,
+    format_env, format_shell_exports, install_shell_hook, keydock_config_dir, shell_hook,
+    shell_integration_status,
 };
 
 pub fn default_database_path() -> Result<PathBuf> {
@@ -67,45 +69,6 @@ impl AppStore {
             .or(self.get_secret_by_name(id_or_name)?)
             .ok_or_else(|| anyhow!("secret not found: {id_or_name}"))
     }
-
-    pub fn resolve_workspace(&self, id_or_name: &str) -> Result<Workspace> {
-        self.get_workspace(id_or_name)?
-            .ok_or_else(|| anyhow!("workspace not found: {id_or_name}"))
-    }
-
-    pub(crate) fn key_value(&self, key_id: &str) -> Result<String> {
-        let encrypted: String = self.conn.query_row(
-            "SELECT encrypted_value FROM keys WHERE id = ?1",
-            [key_id],
-            |row| row.get(0),
-        )?;
-        decrypt_secret(&self.master_key, &encrypted)
-    }
-
-    pub(crate) fn workspace_variable(
-        &self,
-        workspace_id: &str,
-        env_name: &str,
-    ) -> Result<Option<WorkspaceVariable>> {
-        use workspaces::{fill_variable_preview, row_to_workspace_variable};
-        let mut variable = self
-            .conn
-            .query_row(
-                "SELECT wv.id, wv.workspace_id, wv.secret_id, s.name, wv.key_id, k.name, wv.env_name, wv.enabled,
-                 wv.required, wv.sort_order, wv.created_at, wv.updated_at
-                 FROM workspace_variables wv
-                 JOIN secrets s ON s.id = wv.secret_id
-                 JOIN keys k ON k.id = wv.key_id
-                 WHERE wv.workspace_id = ?1 AND wv.env_name = ?2",
-                params![workspace_id, env_name],
-                row_to_workspace_variable,
-            )
-            .optional()?;
-        if let Some(ref mut v) = variable {
-            fill_variable_preview(self, v);
-        }
-        Ok(variable)
-    }
 }
 
 /// Execute `f` inside a SQLite transaction (BEGIN/COMMIT).
@@ -132,29 +95,24 @@ pub(crate) fn log_audit(
     conn: &Connection,
     action: &str,
     target_id: Option<&str>,
-    workspace_id: Option<&str>,
+    preset_id: Option<&str>,
     env_name: Option<&str>,
 ) -> anyhow::Result<()> {
     use uuid::Uuid;
     conn.execute(
-        "INSERT INTO audit_logs (id, action, target_id, workspace_id, env_name, created_at)
+        "INSERT INTO audit_logs (id, action, target_id, preset_id, env_name, created_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
         rusqlite::params![
             Uuid::new_v4().to_string(),
             action,
             target_id,
-            workspace_id,
+            preset_id,
             env_name,
             now(),
         ],
     )?;
     Ok(())
 }
-
-pub(crate) const KEY_SELECT: &str =
-    "SELECT k.id, k.secret_id, s.name, k.name, k.env_name, k.include_by_default, k.expires_at,
-k.tags_json, k.description, k.created_at, k.updated_at
-FROM keys k JOIN secrets s ON s.id = k.secret_id";
 
 /// Mask a value for display: show first 4 and last 4 characters,
 /// with `••••` in between.  Values ≤ 8 characters are entirely
@@ -206,7 +164,7 @@ pub(crate) fn bool_to_i64(value: bool) -> i64 {
 }
 
 #[cfg(test)]
-pub fn env_vec_to_map(env: Vec<WorkspaceEnv>) -> std::collections::BTreeMap<String, String> {
+pub fn env_vec_to_map(env: Vec<PresetEnv>) -> std::collections::BTreeMap<String, String> {
     env.into_iter()
         .map(|item| (item.env_name, item.value))
         .collect()
@@ -215,7 +173,7 @@ pub fn env_vec_to_map(env: Vec<WorkspaceEnv>) -> std::collections::BTreeMap<Stri
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{KeyInput, SecretCategory, SecretInput};
+    use crate::{SecretCategory, SecretFieldInput, SecretFieldType, SecretInput};
     use uuid::Uuid;
 
     fn store() -> AppStore {
@@ -224,161 +182,200 @@ mod tests {
     }
 
     #[test]
-    fn workspace_env_mapping_resolves_key_plaintext() {
+    fn preset_env_mapping_resolves_field_plaintext() {
         let store = store();
         store
             .create_secret(SecretInput {
                 name: "openrouter".into(),
                 category: SecretCategory::AI,
-                base_url: Some("https://openrouter.ai/api/v1".into()),
                 tags: vec!["ai".into()],
-                description: None,
-                dashboard_url: None,
-                docs_url: None,
-                login_url: None,
                 notes: None,
             })
             .unwrap();
-        store
-            .create_key(
+        let field = store
+            .create_secret_field(
                 "openrouter",
-                KeyInput {
-                    name: "client-a".into(),
-                    value: "sk-test".into(),
+                SecretFieldInput {
+                    label: "API Key".into(),
+                    field_type: SecretFieldType::Secret,
+                    value: Some("sk-test".into()),
+                    sensitive: true,
                     env_name: Some("OPENAI_API_KEY".into()),
-                    include_by_default: true,
-                    tags: vec![],
-                    description: None,
+                    purpose: None,
+                    section: None,
+                    sort_order: None,
+                    enabled: true,
                     expires_at: None,
                 },
             )
             .unwrap();
-        store.create_workspace("startup", None).unwrap();
         store
-            .set_workspace_variable("startup", None, "openrouter/client-a")
+            .create_preset(crate::PresetInput {
+                name: "startup".into(),
+                description: None,
+            })
             .unwrap();
-        let env = env_vec_to_map(store.workspace_env("startup").unwrap());
+        store
+            .add_preset_entry("startup", &field.id, Some("OPENAI_API_KEY"))
+            .unwrap();
+        let env = env_vec_to_map(store.resolve_preset_env("startup").unwrap());
         assert_eq!(env.get("OPENAI_API_KEY").unwrap(), "sk-test");
     }
 
     #[test]
-    fn deleting_secret_removes_workspace_reference() {
+    fn deleting_secret_removes_preset_entries() {
         let store = store();
         let secret = store
             .create_secret(SecretInput {
                 name: "github".into(),
                 category: SecretCategory::DevTool,
-                base_url: None,
                 tags: vec![],
-                description: None,
-                dashboard_url: None,
-                docs_url: None,
-                login_url: None,
                 notes: None,
             })
             .unwrap();
-        store
-            .create_key(
+        let field = store
+            .create_secret_field(
                 "github",
-                KeyInput {
-                    name: "pat".into(),
-                    value: "ghp_test".into(),
+                SecretFieldInput {
+                    label: "PAT".into(),
+                    field_type: SecretFieldType::Secret,
+                    value: Some("ghp_test".into()),
+                    sensitive: true,
                     env_name: Some("GITHUB_TOKEN".into()),
-                    include_by_default: true,
-                    tags: vec![],
-                    description: None,
+                    purpose: None,
+                    section: None,
+                    sort_order: None,
+                    enabled: true,
                     expires_at: None,
                 },
             )
             .unwrap();
-        store.create_workspace("personal", None).unwrap();
         store
-            .set_workspace_variable("personal", None, "github/pat")
+            .create_preset(crate::PresetInput {
+                name: "personal".into(),
+                description: None,
+            })
+            .unwrap();
+        store
+            .add_preset_entry("personal", &field.id, Some("GITHUB_TOKEN"))
             .unwrap();
         store.delete_secret(&secret.id).unwrap();
-        assert!(store
-            .list_workspace_variables("personal")
-            .unwrap()
-            .is_empty());
+        assert!(store.list_preset_entries("personal").unwrap().is_empty());
     }
 
     #[test]
-    fn migrate_adds_missing_tags_json_to_legacy_workspaces() {
-        let path = std::env::temp_dir().join(format!("keydock-test-{}.sqlite3", Uuid::new_v4()));
-        let conn = rusqlite::Connection::open(&path).unwrap();
-        conn.execute_batch(
-            "
-            CREATE TABLE secrets (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL UNIQUE,
-                category TEXT NOT NULL,
-                base_url TEXT,
-                model_name TEXT,
-                tags_json TEXT NOT NULL DEFAULT '[]',
-                description TEXT,
-                dashboard_url TEXT,
-                docs_url TEXT,
-                login_url TEXT,
-                notes TEXT,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            );
-            CREATE TABLE workspaces (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL UNIQUE,
-                description TEXT,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            );
-            INSERT INTO workspaces (id, name, description, created_at, updated_at)
-            VALUES ('ws-1', 'legacy', NULL, '2024-01-01', '2024-01-01');
-            ",
-        )
-        .unwrap();
-        drop(conn);
-
-        let store = AppStore::open(path, vec![3_u8; 32]).unwrap();
-        let workspaces = store.list_workspaces().unwrap();
-        assert_eq!(workspaces.len(), 1);
-        assert_eq!(workspaces[0].name, "legacy");
-        assert!(workspaces[0].tags.is_empty());
-    }
-
-    #[test]
-    fn secret_env_exports_service_defaults_and_keys() {
+    fn preset_crud_works() {
         let store = store();
         store
+            .create_preset(crate::PresetInput {
+                name: "dev".into(),
+                description: Some("Development preset".into()),
+            })
+            .unwrap();
+        let presets = store.list_presets().unwrap();
+        assert_eq!(presets.len(), 1);
+        assert_eq!(presets[0].name, "dev");
+        assert_eq!(
+            presets[0].description.as_deref(),
+            Some("Development preset")
+        );
+
+        store.delete_preset("dev").unwrap();
+        assert!(store.list_presets().unwrap().is_empty());
+    }
+
+    #[test]
+    fn preset_composition_resolves_env() {
+        let store = store();
+
+        store
             .create_secret(SecretInput {
-                name: "openrouter".into(),
+                name: "openai".into(),
                 category: SecretCategory::AI,
-                base_url: Some("https://openrouter.ai/api/v1".into()),
                 tags: vec![],
-                description: None,
-                dashboard_url: None,
-                docs_url: None,
-                login_url: None,
                 notes: None,
             })
             .unwrap();
-        store
-            .create_key(
-                "openrouter",
-                KeyInput {
-                    name: "default".into(),
-                    value: "sk-test".into(),
+        let api_key_field = store
+            .create_secret_field(
+                "openai",
+                SecretFieldInput {
+                    label: "API Key".into(),
+                    field_type: SecretFieldType::Secret,
+                    value: Some("sk-base".into()),
+                    sensitive: true,
                     env_name: Some("OPENAI_API_KEY".into()),
-                    include_by_default: true,
-                    tags: vec![],
-                    description: None,
+                    purpose: None,
+                    section: None,
+                    sort_order: None,
+                    enabled: true,
                     expires_at: None,
                 },
             )
             .unwrap();
-        let env = env_vec_to_map(store.secret_env("openrouter").unwrap());
-        assert_eq!(
-            env.get("OPENAI_BASE_URL").unwrap(),
-            "https://openrouter.ai/api/v1"
-        );
-        assert_eq!(env.get("OPENAI_API_KEY").unwrap(), "sk-test");
+
+        store
+            .create_secret(SecretInput {
+                name: "cloudflare".into(),
+                category: SecretCategory::Cloud,
+                tags: vec![],
+                notes: None,
+            })
+            .unwrap();
+        let cf_token_field = store
+            .create_secret_field(
+                "cloudflare",
+                SecretFieldInput {
+                    label: "API Token".into(),
+                    field_type: SecretFieldType::Secret,
+                    value: Some("cf-token".into()),
+                    sensitive: true,
+                    env_name: Some("CLOUDFLARE_API_TOKEN".into()),
+                    purpose: None,
+                    section: None,
+                    sort_order: None,
+                    enabled: true,
+                    expires_at: None,
+                },
+            )
+            .unwrap();
+
+        store
+            .create_preset(crate::PresetInput {
+                name: "ai-base".into(),
+                description: None,
+            })
+            .unwrap();
+        store
+            .create_preset(crate::PresetInput {
+                name: "cloud-base".into(),
+                description: None,
+            })
+            .unwrap();
+
+        store
+            .add_preset_entry("ai-base", &api_key_field.id, Some("OPENAI_API_KEY"))
+            .unwrap();
+        store
+            .add_preset_entry(
+                "cloud-base",
+                &cf_token_field.id,
+                Some("CLOUDFLARE_API_TOKEN"),
+            )
+            .unwrap();
+
+        store
+            .create_preset(crate::PresetInput {
+                name: "fullstack".into(),
+                description: None,
+            })
+            .unwrap();
+
+        store.include_preset("fullstack", "ai-base").unwrap();
+        store.include_preset("fullstack", "cloud-base").unwrap();
+
+        let env = env_vec_to_map(store.resolve_preset_env("fullstack").unwrap());
+        assert_eq!(env.get("OPENAI_API_KEY").unwrap(), "sk-base");
+        assert_eq!(env.get("CLOUDFLARE_API_TOKEN").unwrap(), "cf-token");
     }
 }

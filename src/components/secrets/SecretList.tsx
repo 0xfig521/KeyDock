@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react"
+import { memo } from "react"
 import { PlusIcon, SearchIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { Badge } from "@/components/ui/badge"
@@ -6,11 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
-import type { Key, Secret } from "@/types"
+import type { Secret } from "@/types"
 
 interface SecretListProps {
   secrets: Secret[]
-  keys: Key[]
   selectedId: string
   search: string
   loading: boolean
@@ -21,7 +20,6 @@ interface SecretListProps {
 
 export function SecretList({
   secrets,
-  keys,
   selectedId,
   search,
   loading,
@@ -30,17 +28,6 @@ export function SecretList({
   onAdd,
 }: SecretListProps) {
   const { t } = useTranslation()
-
-  const keysCountMap = useMemo(
-    () => keys.reduce<Record<string, number>>(
-      (m, k) => {
-        m[k.secretId] = (m[k.secretId] ?? 0) + 1
-        return m
-      },
-      {},
-    ),
-    [keys],
-  )
 
   const isSearching = search.trim().length > 0
 
@@ -95,7 +82,6 @@ export function SecretList({
               <SecretListItem
                 key={secret.id}
                 secret={secret}
-                keysCount={keysCountMap[secret.id] ?? 0}
                 isSelected={selectedId === secret.id}
                 onSelect={onSelect}
                 t={t}
@@ -110,7 +96,6 @@ export function SecretList({
 
 interface SecretListItemProps {
   secret: Secret
-  keysCount: number
   isSelected: boolean
   onSelect: (id: string) => void
   t: (key: string, options?: Record<string, unknown>) => string
@@ -118,7 +103,6 @@ interface SecretListItemProps {
 
 const SecretListItem = memo(function SecretListItem({
   secret,
-  keysCount,
   isSelected,
   onSelect,
   t,
@@ -147,16 +131,10 @@ const SecretListItem = memo(function SecretListItem({
         </Badge>
       </div>
       <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-        <span>
-          {t("secrets.keyCount", { count: keysCount })}
-        </span>
         {tags.length > 0 && (
-          <>
-            <span>•</span>
-            <span className="truncate">
-              {tags.slice(0, 2).join(", ")}
-            </span>
-          </>
+          <span className="truncate">
+            {tags.slice(0, 2).join(", ")}
+          </span>
         )}
       </div>
     </button>

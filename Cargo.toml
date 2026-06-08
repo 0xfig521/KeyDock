@@ -9,7 +9,7 @@ resolver = "2"
 [workspace.package]
 edition = "2021"
 license = "MIT"
-repository = "https://example.local/keydock"
+repository = "https://github.com/0xfig-labs/KeyDock"
 
 [workspace.dependencies]
 anyhow = "1"

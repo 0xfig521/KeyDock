@@ -16,7 +16,7 @@ const defaultItems: FaqItem[] = [
   {
     question: "How is this different from .env files?",
     answer:
-      "A .env file is tied to a single directory and easily scattered across projects, backups, and cloud storage. KeyDock keeps all your secrets in one encrypted vault and lets you define project boundaries through workspaces — so you never lose track of which key belongs where, and nothing is written to disk in plain text.",
+      "A .env file is tied to one directory and is easy to scatter across projects, backups, and cloud storage. KeyDock keeps secrets in one local encrypted vault, then maps selected fields into reusable presets. You can activate a preset for new shells or inject it into one command without editing project files.",
   },
   {
     question: "Is it secure?",
@@ -31,7 +31,7 @@ const defaultItems: FaqItem[] = [
   {
     question: "Can I use it without the desktop app?",
     answer:
-      "Absolutely. The CLI is self-contained — you can create workspaces, store secrets, activate environments, and run one-shot commands entirely from the terminal. The desktop app adds visual management, audit browsing, and quick-copy workflows on top.",
+      "Yes. The CLI can inspect presets, activate and deactivate shell environments, print shell hooks, open the app, and run one-shot commands with preset variables injected. The desktop app adds visual secret editing, preset composition, audit browsing, and quick-copy workflows.",
   },
   {
     question: "Do you offer cloud sync or team sharing?",
@@ -41,12 +41,12 @@ const defaultItems: FaqItem[] = [
   {
     question: "How do I migrate my existing .env files?",
     answer:
-      "For now, migration is a manual process — create a workspace, add your keys, and link them to environment variables. We plan to ship an import command that reads .env files and scaffolds the workspace automatically.",
+      "For now, migration is manual: create secrets from templates, add your existing values, then map the fields into presets with the env names your tools expect. An importer for .env files is planned.",
   },
   {
     question: "Can I use KeyDock in CI/CD pipelines?",
     answer:
-      "Not yet, but it's on the roadmap. We plan to expose a local HTTP API that CI runners could query for secrets during a build. Until then, KeyDock is focused on local development workstation use.",
+      "Not yet. KeyDock is focused on local development workstations. For automation on your machine, use `keydock run <preset> -- <command>` to inject a scoped set of variables into one process.",
   },
 ];
 

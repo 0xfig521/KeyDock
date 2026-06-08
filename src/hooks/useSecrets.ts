@@ -1,14 +1,16 @@
 import { useCallback, useMemo, useState } from "react"
 import { useToast } from "@/hooks/useToast"
 import { useConfirm } from "@/components/ui/confirm-dialog"
+import { useSecretFields, type UseSecretFields } from "@/hooks/useSecretFields"
 import {
   createSecret,
+  createSecretField as createFieldApi,
   deleteSecret as deleteSecretApi,
   listSecrets,
   updateSecret as updateSecretApi,
 } from "@/lib/tauri"
-import { emptySecretForm, splitTags } from "@/constants"
-import type { PresetDef, Secret, SecretCategory, SecretForm, SecretInput } from "@/types"
+import { createSecretFieldDrafts, emptySecretForm, splitTags } from "@/constants"
+import type { Secret, SecretCategory, SecretFieldDraft, SecretForm, SecretInput } from "@/types"
 
 function isSecretNameConflict(message: string): boolean {
   return message.includes("UNIQUE constraint failed: secrets.name")
@@ -29,9 +31,11 @@ export interface UseSecrets {
   startEdit: (secret: Secret) => void
   cancelForm: () => void
   save: () => Promise<Secret | null>
-  createFromPreset: (preset: PresetDef) => Promise<Secret | null>
   remove: (id: string, name: string) => Promise<void>
   refresh: () => Promise<void>
+  fieldDrafts: SecretFieldDraft[]
+  setFieldDrafts: (drafts: SecretFieldDraft[]) => void
+  fieldService: UseSecretFields
 }
 
 export function useSecrets(): UseSecrets {
@@ -43,6 +47,8 @@ export function useSecrets(): UseSecrets {
   const [editingId, setEditingId] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [fieldDrafts, setFieldDrafts] = useState<SecretFieldDraft[]>([])
+  const fieldService = useSecretFields()
 
   const refresh = useCallback(async () => {
     try {
@@ -70,6 +76,7 @@ export function useSecrets(): UseSecrets {
     setForm(emptySecretForm)
     setEditingId("")
     setShowForm(true)
+    setFieldDrafts(createSecretFieldDrafts("aI"))
   }, [])
 
   const startEdit = useCallback((secret: Secret) => {
@@ -77,32 +84,25 @@ export function useSecrets(): UseSecrets {
     setForm({
       name: secret.name,
       category: secret.category,
-      baseUrl: secret.baseUrl ?? "",
       tags: (secret.tags ?? []).join(", "),
-      description: secret.description ?? "",
-      dashboardUrl: secret.dashboardUrl ?? "",
-      docsUrl: secret.docsUrl ?? "",
-      loginUrl: secret.loginUrl ?? "",
     })
+    setFieldDrafts([])
     setShowForm(true)
-  }, [])
+    void fieldService.refresh(secret.id)
+  }, [fieldService])
 
   // FIX: also clear editingId on cancel (was leaking the previous edit state into the next create).
   const cancelForm = useCallback(() => {
     setShowForm(false)
     setEditingId("")
+    setFieldDrafts([])
   }, [])
 
   const buildInput = useCallback(
     (f: SecretForm): SecretInput => ({
       name: f.name.trim(),
       category: f.category as SecretCategory,
-      baseUrl: f.baseUrl.trim() || null,
       tags: splitTags(f.tags),
-      description: f.description.trim() || null,
-      dashboardUrl: f.dashboardUrl.trim() || null,
-      docsUrl: f.docsUrl.trim() || null,
-      loginUrl: f.loginUrl.trim() || null,
       notes: null,
     }),
     [],
@@ -140,11 +140,33 @@ export function useSecrets(): UseSecrets {
         show(`Updated service group: ${saved.name}`, "success")
       } else {
         saved = await createSecret(input)
+        for (const draft of fieldDrafts) {
+          const label = draft.label.trim()
+          if (!label) continue
+          const value = draft.value.trim()
+          try {
+            await createFieldApi(saved.id, {
+              label,
+              fieldType: draft.fieldType,
+              value,
+              sensitive: draft.sensitive,
+              envName: draft.envName.trim() || null,
+              purpose: draft.purpose ?? null,
+              section: draft.section ?? null,
+              sortOrder: null,
+              enabled: true,
+              expiresAt: null,
+            })
+          } catch {
+            // Field creation errors shouldn't block the secret creation
+          }
+        }
         show(`Created service group: ${saved.name}`, "success")
       }
       setShowForm(false)
       setEditingId("")
       setForm(emptySecretForm)
+      setFieldDrafts([])
       await refresh()
       return saved
     } catch (e) {
@@ -166,53 +188,7 @@ export function useSecrets(): UseSecrets {
         setSubmitting(false)
       }
     },
-    [buildInput, editingId, form, refresh, secrets, show],
-  )
-
-  const createFromPreset = useCallback(
-    async (preset: PresetDef): Promise<Secret | null> => {
-      if (
-        secrets.some(
-          (s) => s.name.toLowerCase() === preset.name.toLowerCase(),
-        )
-      ) {
-        show(
-          `A service named "${preset.name}" already exists.`,
-          "error",
-        )
-        return null
-      }
-      try {
-        setSubmitting(true)
-        const input: SecretInput = {
-          name: preset.name,
-          category: preset.category,
-          baseUrl: preset.baseUrl,
-          tags: splitTags(preset.tags),
-          description: preset.description ?? null,
-          dashboardUrl: null,
-          docsUrl: null,
-          loginUrl: null,
-          notes: null,
-        }
-        const created = await createSecret(input)
-        show(`Created service group: ${created.name}`, "success")
-        await refresh()
-        return created
-      } catch (e) {
-        const message = extractMessage(e)
-        if (isSecretNameConflict(message)) {
-          show(`A service named "${preset.name}" already exists.`, "error")
-          void refresh()
-        } else {
-          show(message, "error")
-        }
-        return null
-      } finally {
-        setSubmitting(false)
-      }
-    },
-    [refresh, secrets, show],
+    [buildInput, editingId, fieldDrafts, form, refresh, secrets, show],
   )
 
   const confirm_ = useConfirm()
@@ -256,9 +232,11 @@ export function useSecrets(): UseSecrets {
     startEdit,
     cancelForm,
     save,
-    createFromPreset,
     remove,
     refresh,
+    fieldDrafts,
+    setFieldDrafts,
+    fieldService,
   }
 }
 

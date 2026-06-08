@@ -15,21 +15,21 @@ interface HeroProps {
 }
 
 const trustMarkers: TrustMarker[] = [
-  { Icon: Shield, label: "Local encrypted" },
+  { Icon: Shield, label: "Local encrypted vault" },
   { label: "MIT Licensed" },
   { Icon: Monitor, label: "macOS · Linux · Windows" },
-  { Icon: Terminal, label: "CLI included" },
+  { Icon: Terminal, label: "Preset CLI included" },
 ];
 
 const defaultHeadline = (
   <>
-    Your secrets don't live in{" "}
-    <span className="text-primary">.env files</span> anymore.
+    Put every API key behind{" "}
+    <span className="text-primary">one local control center</span>.
   </>
 );
 
 const defaultSubheadline =
-  "KeyDock turns scattered API keys, cloud tokens, and project-specific env vars into a local encrypted workspace you can activate from desktop or CLI.";
+  "KeyDock is a local encrypted vault for developer secrets. Save API keys once, map fields into reusable env presets, activate trusted shell environments, or inject only the variables a command or AI agent actually needs.";
 
 export function Hero({
   headline = defaultHeadline,
@@ -100,7 +100,7 @@ export function Hero({
               />
               <img
                 src={screenshotSrc}
-                alt="KeyDock screenshot"
+                alt="KeyDock desktop app showing local secrets, env presets, and audit trail"
                 className="relative rounded-xl border border-border shadow-2xl float-animation w-full h-auto"
               />
             </div>

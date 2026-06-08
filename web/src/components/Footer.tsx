@@ -36,12 +36,12 @@ export function Footer({
       <div className="border-t border-border bg-card/50 py-16 md:py-20">
         <div className="mx-auto max-w-2xl px-4 text-center">
           <h2 className="mb-3 text-2xl font-semibold tracking-tight md:text-3xl">
-            Start organizing your secrets in 5 minutes.
+            Start from a safer shell in 5 minutes.
           </h2>
 
           <p className="mb-8 text-sm text-muted-foreground">
-            Download the CLI or desktop app — no sign-up, no telemetry, no
-            strings attached.
+            Download the desktop app and CLI, create your vault, and replace scattered
+            .env files with reusable presets — no sign-up or telemetry.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
@@ -82,7 +82,7 @@ export function Footer({
           <div className="flex flex-col items-center gap-1 text-center">
             <p className="flex items-center gap-1.5 text-sm font-medium">
               <GitFork className="h-4 w-4" />
-              KeyDock &mdash; Developer Secret Workspace
+              KeyDock &mdash; Local API Key Vault & Env Presets
             </p>
             <p className="text-xs text-muted-foreground/60">
               Local-first. Open source. MIT licensed.

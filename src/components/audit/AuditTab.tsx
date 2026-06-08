@@ -123,7 +123,7 @@ export function AuditTab({ logs, onRefresh }: AuditTabProps) {
                           {log.action}
                         </span>
                         <span className="text-muted-foreground truncate font-mono text-[11px]">
-                          {log.envName ?? log.targetName ?? log.workspaceName ?? "—"}
+                          {log.envName ?? log.targetName ?? "—"}
                         </span>
                       </div>
                       <time className="text-[10px] text-muted-foreground font-mono shrink-0">

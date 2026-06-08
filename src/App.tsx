@@ -8,27 +8,24 @@ import { AuditTab } from "@/components/audit/AuditTab"
 import { DashboardTab } from "@/components/dashboard/DashboardTab"
 import { SecretsTab } from "@/components/secrets/SecretsTab"
 import { SettingsTab } from "@/components/settings/SettingsTab"
-import { WorkspacesTab } from "@/components/workspaces/WorkspacesTab"
-import { useKeys } from "@/hooks/useKeys"
+import { PresetsTab } from "@/components/presets/PresetsTab"
 import { useAudit } from "@/hooks/useAudit"
 import { useSecrets } from "@/hooks/useSecrets"
 import { useToast } from "@/hooks/useToast"
 import { useUpdate } from "@/hooks/useUpdate"
 import { useVault } from "@/hooks/useVault"
-import { useWorkspaces } from "@/hooks/useWorkspaces"
 import { useTheme } from "@/hooks/useTheme"
-import { ensureKeydockBinary, ensureShellHook, getActiveWorkspace } from "@/lib/tauri"
-import type { ActiveWorkspace } from "@/types"
+import { usePresets } from "@/hooks/usePresets"
+import { ensureKeydockBinary, ensureShellHook } from "@/lib/tauri"
 
-type Tab = "dashboard" | "secrets" | "workspaces" | "audit" | "settings"
+type Tab = "dashboard" | "secrets" | "presets" | "audit" | "settings"
 
 export function App() {
   useTheme()
 
   const vault = useVault()
   const secrets = useSecrets()
-  const keys = useKeys()
-  const workspaces = useWorkspaces()
+  const presets = usePresets()
   const audit = useAudit()
   const { t } = useTranslation()
   const { show } = useToast()
@@ -36,8 +33,6 @@ export function App() {
 
   const [activeTab, setActiveTab] = useState<Tab>("dashboard")
   const [selectedSecretId, setSelectedSecretId] = useState("")
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState("")
-  const [activeWorkspace, setActiveWorkspace] = useState<ActiveWorkspace | null>(null)
   const [currentVersion, setCurrentVersion] = useState("")
 
   useEffect(() => {
@@ -46,51 +41,19 @@ export function App() {
 
   useEffect(() => {
     if (!vault.ready) return
-    if (workspaces.workspaces.length === 0) return
-    if (selectedWorkspaceId) return
-    setSelectedWorkspaceId(workspaces.workspaces[0].id)
-  }, [vault.ready, workspaces.workspaces, selectedWorkspaceId])
-
-  // Fetch active workspace on vault ready and set up listener.
-  useEffect(() => {
-    if (!vault.ready) return
-    const fetch = () =>
-      getActiveWorkspace()
-        .then(setActiveWorkspace)
-        .catch(() => setActiveWorkspace(null))
-    fetch()
-    let unlisten: (() => void) | undefined
-    import("@tauri-apps/api/event")
-      .then(({ listen }) => listen("active-workspace-changed", fetch))
-      .then((fn) => { unlisten = fn })
-      .catch(() => {})
-    return () => unlisten?.()
-  }, [vault.ready])
-
-  // Load lightweight metadata on vault ready.
-  // Secrets and workspaces are loaded upfront (sidebar counts).
-  // Keys are loaded upfront (now safe — no decryption after P0-1).
-  // Audit logs are loaded lazily by AuditTab when the user visits it.
-  useEffect(() => {
-    if (!vault.ready) return
     void secrets.refresh()
-    void keys.refresh()
-    void workspaces.refresh()
-    // Auto-install shell hook + keydock CLI binary (one-time check per session).
+    void presets.refresh()
     ensureShellHook().catch(() => {})
     ensureKeydockBinary().catch(() => {})
   }, [
     vault.ready,
     secrets.refresh,
-    keys.refresh,
-    workspaces.refresh,
+    presets.refresh,
   ])
 
   async function handleLock() {
     try {
       await vault.lock()
-      keys.clearRevealed()
-      setActiveWorkspace(null)
       setActiveTab("dashboard")
     } catch (e) {
       show(extractMessage(e), "error")
@@ -109,12 +72,6 @@ export function App() {
   }, [checkForUpdates, show, t])
 
   function handleTabChange(tab: Tab) {
-    if (tab !== "secrets") {
-      keys.closeForm()
-    }
-    if (tab !== "dashboard") {
-      // Clear any leftover export text and revealed keys when leaving the dashboard.
-    }
     setActiveTab(tab)
   }
 
@@ -133,7 +90,7 @@ export function App() {
         activeTab={activeTab}
         onTabChange={handleTabChange}
         secretCount={secrets.secrets.length}
-        workspaceCount={workspaces.workspaces.length}
+        presetCount={presets.presets.length}
         onLockClick={handleLock}
         updateStatus={update.status}
         onCheckUpdate={handleCheckUpdate}
@@ -143,32 +100,21 @@ export function App() {
         {activeTab === "dashboard" && (
           <DashboardTab
             secrets={secrets}
-            keys={keys}
-            workspaces={workspaces}
             audit={audit}
-            activeWorkspace={activeWorkspace}
+            presetCount={presets.presets.length}
             onSelectTab={setActiveTab}
-            onSelectWorkspace={setSelectedWorkspaceId}
           />
         )}
         {activeTab === "secrets" && (
           <SecretsTab
             secrets={secrets}
-            keys={keys}
             selectedSecretId={selectedSecretId}
-            selectedWorkspaceId={selectedWorkspaceId}
-            activeWorkspace={activeWorkspace}
             onSelectSecret={setSelectedSecretId}
           />
         )}
-        {activeTab === "workspaces" && (
-          <WorkspacesTab
-            keys={keys}
-            workspaces={workspaces}
-            selectedWorkspaceId={selectedWorkspaceId}
-            selectedSecretId={selectedSecretId}
+        {activeTab === "presets" && (
+          <PresetsTab
             vaultReady={vault.ready}
-            onSelectWorkspace={setSelectedWorkspaceId}
           />
         )}
         {activeTab === "audit" && (

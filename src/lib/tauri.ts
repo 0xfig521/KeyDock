@@ -1,16 +1,16 @@
 import { invoke } from "@tauri-apps/api/core"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import type {
-  Key,
-  KeyInput,
-  ActiveWorkspace,
+  ActivePreset,
   AuditLog,
+  Preset,
+  PresetEntry,
   Secret,
+  SecretField,
+  SecretFieldInput,
   SecretInput,
   ShellIntegrationStatus,
   VaultStatus,
-  Workspace,
-  WorkspaceVariable,
 } from "@/types"
 
 // Centralized, typed wrappers for all Tauri commands in src-tauri/src/lib.rs.
@@ -43,77 +43,44 @@ export const updateSecret = (id: string, input: SecretInput) =>
 export const deleteSecret = (idOrName: string) =>
   invoke<void>("delete_secret", { idOrName })
 
-// --- Keys ---
+// --- Secret Fields ---
 
-export const listKeys = (secret: string | null) =>
-  invoke<Key[]>("list_keys", { secret })
+export const listSecretFields = (secret: string) =>
+  invoke<SecretField[]>("list_secret_fields", { secret })
 
-export const createKey = (secret: string, input: KeyInput) =>
-  invoke<Key>("create_key", { secret, input })
+export const createSecretField = (secret: string, input: SecretFieldInput) =>
+  invoke<SecretField>("create_secret_field", { secret, input })
 
-export const updateKey = (key: string, input: KeyInput) =>
-  invoke<Key>("update_key", { key, input })
+export const updateSecretField = (id: string, input: SecretFieldInput) =>
+  invoke<SecretField>("update_secret_field", { id, input })
 
-export const deleteKey = (key: string) =>
-  invoke<void>("delete_key", { key })
+export const deleteSecretField = (id: string) =>
+  invoke<void>("delete_secret_field", { id })
 
-export const revealKey = (key: string, workspaceId: string | null = null) =>
-  invoke<string>("reveal_key", { key, workspaceId })
+export const revealSecretField = (id: string) =>
+  invoke<string>("reveal_secret_field", { id })
 
-// --- Workspaces ---
+export const reorderSecretFields = (secret: string, fieldIds: string[]) =>
+  invoke<SecretField[]>("reorder_secret_fields", { secret, fieldIds })
 
-export const listWorkspaces = () => invoke<Workspace[]>("list_workspaces")
+// --- Preset Entries ---
 
-export const createWorkspace = (name: string, description: string | null) =>
-  invoke<Workspace>("create_workspace", { name, description })
+export const addPresetEntry = (
+  preset: string,
+  fieldId: string,
+  envName?: string | null,
+) => invoke<PresetEntry>("add_preset_entry", { preset, fieldId, envName })
 
-export const deleteWorkspace = (idOrName: string) =>
-  invoke<void>("delete_workspace", { idOrName })
+export const listPresetEntries = (preset: string) =>
+  invoke<PresetEntry[]>("list_preset_entries", { preset })
 
-// --- Variables ---
+export const removePresetEntry = (preset: string, envName: string) =>
+  invoke<void>("remove_preset_entry", { preset, envName })
 
-export const listWorkspaceVariables = (workspace: string) =>
-  invoke<WorkspaceVariable[]>("list_workspace_variables", { workspace })
+export const exportPresetEnv = (preset: string) =>
+  invoke<string>("export_preset_env", { preset })
 
-export const setWorkspaceVariable = (
-  workspace: string,
-  envName: string | null,
-  key: string,
-) =>
-  invoke<WorkspaceVariable>("set_workspace_variable", {
-    workspace,
-    envName,
-    key,
-  })
-
-export const deleteWorkspaceVariable = (workspace: string, envName: string) =>
-  invoke<void>("delete_workspace_variable", { workspace, envName })
-
-export const addSecretDefaultKeysToWorkspace = (
-  workspace: string,
-  secret: string,
-) =>
-  invoke<WorkspaceVariable[]>(
-    "add_secret_default_keys_to_workspace",
-    { workspace, secret },
-  )
-
-// --- Export & Audit ---
-
-export const exportEnv = (workspace: string) =>
-  invoke<string>("export_env", { workspace })
-
-export const activateWorkspace = (workspace: string) =>
-  invoke<ActiveWorkspace>("activate_workspace", { workspace })
-
-export const activateKey = (key: string) =>
-  invoke<ActiveWorkspace>("activate_key", { key })
-
-export const deactivateActiveWorkspace = () =>
-  invoke<void>("deactivate_active_workspace")
-
-export const getActiveWorkspace = () =>
-  invoke<ActiveWorkspace | null>("get_active_workspace")
+// --- Shell Integration & Audit ---
 
 export const installShellIntegration = (shell: "zsh" | "bash") =>
   invoke<string>("install_shell_integration", { shell })
@@ -140,19 +107,49 @@ export const quickCopyText = (text: string) =>
 export const clearClipboardIfMatches = (expected: string) =>
   invoke<void>("clear_clipboard_if_matches", { expected })
 
-export const auditCopy = (params: {
-  targetId: string | null
-  workspaceId: string | null
-  envName: string | null
-}) => invoke<void>("audit_copy", params)
-
 /** Single-IPC copy: writes to system clipboard AND writes audit log. */
 export const copyWithAudit = (params: {
   text: string
   targetId: string | null
-  workspaceId: string | null
   envName: string | null
-}) => invoke<void>("copy_with_audit", params)
+}) => invoke<void>("copy_with_audit", { ...params, presetId: null as string | null })
+
+// --- Presets ---
+
+export const listPresets = () => invoke<Preset[]>("list_presets")
+
+export const createPreset = (name: string, description: string | null) =>
+  invoke<Preset>("create_preset", { name, description })
+
+export const deletePreset = (idOrName: string) =>
+  invoke<void>("delete_preset", { idOrName })
+
+export const includePreset = (preset: string, included: string) =>
+  invoke<void>("include_preset", { preset, included })
+
+export const removeIncludePreset = (preset: string, included: string) =>
+  invoke<void>("remove_include_preset", { preset, included })
+
+export const listPresetIncludes = (preset: string) =>
+  invoke<string[]>("list_preset_includes", { preset })
+
+export const activatePreset = (preset: string) =>
+  invoke<ActivePreset>("activate_preset", { preset })
+
+export const getActivePreset = () =>
+  invoke<ActivePreset | null>("get_active_preset")
+
+export const deactivateActivePreset = () =>
+  invoke<void>("deactivate_active_preset")
+
+export const openKeydockFolder = () =>
+  invoke<void>("open_keydock_folder")
+
+export const previewPreset = (preset: string) =>
+  invoke<string[]>("preview_preset", { preset })
+
+export const listPresetTemplates = () =>
+  invoke<string[]>("list_preset_templates")
 
 /** Open a URL in the system default browser. */
 export const openExternal = (url: string) => openUrl(url)

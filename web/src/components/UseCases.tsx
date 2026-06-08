@@ -14,19 +14,19 @@ const defaultCases: UseCase[] = [
     icon: Cpu,
     title: "AI workflow builders",
     description:
-      "Switch between OpenRouter, DeepSeek, Anthropic, and OpenAI without touching .env files. Keep provider keys organized per project and activate the right set in seconds.",
+      "Switch between OpenRouter, DeepSeek, Anthropic, OpenAI, and local model gateways without editing .env files. Keep provider keys in one vault and activate the right preset in seconds.",
   },
   {
     icon: Cloud,
     title: "Cloud engineers",
     description:
-      "Manage staging, production, and ephemeral sandbox credentials side by side. Map each environment's API tokens and account IDs to the right workspace — no more copy-paste errors.",
+      "Manage staging, production, and ephemeral sandbox credentials side by side. Map API tokens, account IDs, and base URLs into named presets so terminals start with the right environment.",
   },
   {
     icon: Briefcase,
     title: "Freelancers & agency devs",
     description:
-      "Juggle multiple clients without cross-contaminating secrets. Each client gets its own workspace with isolated env mappings, and you switch context instantly from the CLI.",
+      "Juggle multiple clients without cross-contaminating secrets. Each client can have its own preset stack, reusable service fields, and a quick CLI switch when you move between repos.",
   },
 ];
 
@@ -49,7 +49,7 @@ export function UseCases({ cases = defaultCases }: UseCasesProps) {
     >
       <div className="mx-auto max-w-6xl px-4">
         <h2 className="mb-12 text-center text-3xl font-semibold tracking-tight md:text-4xl">
-          Built for the way you work
+          Built for developers who context-switch
         </h2>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">

@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -10,10 +10,15 @@ interface FAQItemProps {
 
 export function FAQItem({ question, answer, defaultOpen = false }: FAQItemProps) {
   const [open, setOpen] = useState(defaultOpen);
+  const [contentHeight, setContentHeight] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
   const baseId = useId();
   const buttonId = `${baseId}-trigger`;
   const panelId = `${baseId}-panel`;
+
+  useEffect(() => {
+    setContentHeight(contentRef.current?.scrollHeight ?? 0);
+  }, [answer, open]);
 
   return (
     <div className="rounded-xl bg-card border border-border overflow-hidden">
@@ -44,7 +49,7 @@ export function FAQItem({ question, answer, defaultOpen = false }: FAQItemProps)
           "transition-all duration-300 ease-in-out overflow-hidden",
         )}
         style={{
-          maxHeight: open ? contentRef.current?.scrollHeight ?? 200 : 0,
+          maxHeight: open ? contentHeight : 0,
           opacity: open ? 1 : 0,
         }}
       >

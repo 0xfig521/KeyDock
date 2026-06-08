@@ -15,11 +15,11 @@ interface PricingProps {
 
 const defaultFeatures = [
   "Unlimited secrets",
-  "Unlimited workspaces",
+  "Unlimited presets",
   "All CLI commands",
   "Audit log",
   "Shell integration",
-  "Presets",
+  "Preset composition",
 ];
 
 export function Pricing({
@@ -49,8 +49,8 @@ export function Pricing({
 
         <p className="mx-auto mb-10 max-w-2xl text-muted-foreground">
           KeyDock is released under the MIT license — no paid tiers, no feature
-          gates, no telemetry. The entire source is open for audit, fork, and
-          contribution.
+          gates, no telemetry. The source is open for audit, forks, and
+          contributions from developers who want safer local secret workflows.
         </p>
 
         <div className="mb-10">

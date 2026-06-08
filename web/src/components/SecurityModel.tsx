@@ -32,9 +32,9 @@ const securityCards: SecurityCard[] = [
   {
     icon: Eye,
     label: "Audit",
-    title: "Local and short-lived",
+    title: "Activation cache",
     description:
-      "Workspace activation writes a plaintext env cache so new shells can load mapped variables. Treat these caches like any other shell secret: convenient, local, and intentionally short-lived.",
+      "Preset activation writes a local plaintext env cache so new shells can load mapped variables. Use `keydock run` when you want command-scoped access without changing global shell state.",
   },
 ];
 
@@ -43,11 +43,11 @@ export function SecurityModel() {
     <section id="security" className="py-16 md:py-24">
       <div className="max-w-6xl mx-auto px-4">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-foreground mb-4">
-          Built for the paranoid. Auditable by design.
+          Local-first security, built for agent-era workflows.
         </h2>
         <p className="text-muted-foreground text-center max-w-2xl mx-auto mb-12">
-          KeyDock is designed as a local-first vault. Your secrets never leave
-          your machine unless you explicitly choose to export them.
+          KeyDock keeps secrets on your machine, makes env exposure intentional,
+          and records sensitive actions in a local audit trail.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -79,9 +79,9 @@ export function SecurityModel() {
           <p className="text-sm text-muted-foreground leading-relaxed">
             A local attacker with code execution on your machine can read vault
             contents while the app has it unlocked - just like they can read any
-            other application's memory. KeyDock does not protect against local
-            code execution. The root trust anchor is your master password and the
-            physical security of your machine.
+            other application's memory. KeyDock reduces accidental exposure and
+            .env sprawl; it does not replace OS hardening, device security, or
+            careful command review.
           </p>
         </div>
       </div>

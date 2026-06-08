@@ -18,17 +18,12 @@ impl AppStore {
 
         // Run each versioned migration if not yet applied.
         self.run_migration(1, "initial_schema", |s| s.migrate_v1_initial_schema())?;
-        self.run_migration(2, "rename_api_keys_to_keys", |s| {
-            s.migrate_v2_rename_api_keys()
+        self.run_migration(6, "add_preset_includes", |s| {
+            s.migrate_v6_add_preset_includes()
         })?;
-        self.run_migration(3, "add_workspace_tags_json", |s| {
-            s.migrate_v3_add_workspace_tags()
-        })?;
-        self.run_migration(4, "fix_workspace_variables_columns", |s| {
-            s.migrate_v4_fix_workspace_variables()
-        })?;
-        self.run_migration(5, "add_keys_expires_at", |s| {
-            s.migrate_v5_add_keys_expires_at()
+        self.run_migration(7, "add_secret_fields", |s| s.migrate_v7_add_secret_fields())?;
+        self.run_migration(8, "replace_preset_with_preset", |s| {
+            s.migrate_v8_replace_preset_with_preset()
         })?;
 
         Ok(())
@@ -101,7 +96,7 @@ impl AppStore {
         self.conn.execute_batch(
             "
             PRAGMA foreign_keys = OFF;
-            DROP TABLE IF EXISTS workspace_variables;
+            DROP TABLE IF EXISTS preset_variables;
             DROP TABLE IF EXISTS project_bindings;
             DROP TABLE IF EXISTS secret_entries;
             DROP TABLE IF EXISTS keys;
@@ -116,139 +111,141 @@ impl AppStore {
 
     fn migrate_v1_initial_schema(&self) -> Result<()> {
         self.conn.execute_batch(
-            "
-            PRAGMA foreign_keys = ON;
-            CREATE TABLE IF NOT EXISTS secrets (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL UNIQUE,
-                category TEXT NOT NULL,
-                base_url TEXT,
-                model_name TEXT,
-                tags_json TEXT NOT NULL DEFAULT '[]',
-                description TEXT,
-                dashboard_url TEXT,
-                docs_url TEXT,
-                login_url TEXT,
-                notes TEXT,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS keys (
-                id TEXT PRIMARY KEY,
-                secret_id TEXT NOT NULL,
-                name TEXT NOT NULL,
-                encrypted_value TEXT NOT NULL,
-                env_name TEXT,
-                include_by_default INTEGER NOT NULL DEFAULT 1,
-                tags_json TEXT NOT NULL DEFAULT '[]',
-                description TEXT,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                UNIQUE(secret_id, name),
-                FOREIGN KEY(secret_id) REFERENCES secrets(id) ON DELETE CASCADE
-            );
-            CREATE TABLE IF NOT EXISTS workspaces (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL UNIQUE,
-                description TEXT,
-                tags_json TEXT NOT NULL DEFAULT '[]',
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS workspace_variables (
-                id TEXT PRIMARY KEY,
-                workspace_id TEXT NOT NULL,
-                secret_id TEXT NOT NULL,
-                key_id TEXT NOT NULL,
-                env_name TEXT NOT NULL,
-                enabled INTEGER NOT NULL DEFAULT 1,
-                required INTEGER NOT NULL DEFAULT 0,
-                sort_order INTEGER NOT NULL DEFAULT 0,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                UNIQUE(workspace_id, env_name),
-                FOREIGN KEY(workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
-                FOREIGN KEY(secret_id) REFERENCES secrets(id) ON DELETE CASCADE,
-                FOREIGN KEY(key_id) REFERENCES keys(id) ON DELETE CASCADE
-            );
-            CREATE TABLE IF NOT EXISTS audit_logs (
-                id TEXT PRIMARY KEY,
-                action TEXT NOT NULL,
-                target_id TEXT,
-                workspace_id TEXT,
-                env_name TEXT,
-                created_at TEXT NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_secrets_name_nocase
-                ON secrets(name COLLATE NOCASE);
-            CREATE INDEX IF NOT EXISTS idx_keys_secret
-                ON keys(secret_id, name COLLATE NOCASE);
-            CREATE INDEX IF NOT EXISTS idx_workspace_variables_ws
-                ON workspace_variables(workspace_id, sort_order, env_name COLLATE NOCASE);
-            CREATE INDEX IF NOT EXISTS idx_workspace_variables_lookup
-                ON workspace_variables(workspace_id, env_name);
-            CREATE INDEX IF NOT EXISTS idx_audit_logs_created
-                ON audit_logs(created_at DESC);
-            ",
+            "PRAGMA foreign_keys = ON;
+             CREATE TABLE IF NOT EXISTS secrets (
+                 id TEXT PRIMARY KEY,
+                 name TEXT NOT NULL UNIQUE,
+                 category TEXT NOT NULL,
+                 tags_json TEXT NOT NULL DEFAULT '[]',
+                 notes TEXT,
+                 created_at TEXT NOT NULL,
+                 updated_at TEXT NOT NULL
+             );
+             CREATE TABLE IF NOT EXISTS presets (
+                 id TEXT PRIMARY KEY,
+                 name TEXT NOT NULL UNIQUE,
+                 description TEXT,
+                 tags_json TEXT NOT NULL DEFAULT '[]',
+                 created_at TEXT NOT NULL,
+                 updated_at TEXT NOT NULL
+             );
+             CREATE TABLE IF NOT EXISTS preset_entries (
+                 id TEXT PRIMARY KEY,
+                 preset_id TEXT NOT NULL REFERENCES presets(id) ON DELETE CASCADE,
+                 secret_id TEXT NOT NULL REFERENCES secrets(id) ON DELETE CASCADE,
+                 field_id TEXT NOT NULL REFERENCES secret_fields(id) ON DELETE CASCADE,
+                 env_name TEXT NOT NULL,
+                 sort_order INTEGER NOT NULL DEFAULT 0,
+                 enabled INTEGER NOT NULL DEFAULT 1,
+                 created_at TEXT NOT NULL,
+                 updated_at TEXT NOT NULL,
+                 UNIQUE(preset_id, env_name)
+             );
+             CREATE TABLE IF NOT EXISTS audit_logs (
+                 id TEXT PRIMARY KEY,
+                 action TEXT NOT NULL,
+                 target_id TEXT,
+                 preset_id TEXT,
+                 env_name TEXT,
+                 created_at TEXT NOT NULL
+             );
+             CREATE INDEX IF NOT EXISTS idx_secrets_name_nocase
+                 ON secrets(name COLLATE NOCASE);
+             CREATE INDEX IF NOT EXISTS idx_preset_entries_preset
+                 ON preset_entries(preset_id, sort_order, env_name COLLATE NOCASE);
+             CREATE INDEX IF NOT EXISTS idx_preset_entries_lookup
+                 ON preset_entries(preset_id, env_name);
+             CREATE INDEX IF NOT EXISTS idx_audit_logs_created
+                 ON audit_logs(created_at DESC);",
         )?;
         Ok(())
     }
 
-    // ── V2: rename api_keys → keys ──────────────────────────────────────
+    // ── V6: add preset_includes table ─────────────────────────────────
 
-    fn migrate_v2_rename_api_keys(&self) -> Result<()> {
-        if self.table_exists("api_keys")? && !self.table_exists("keys")? {
-            self.conn.execute_batch(
-                "PRAGMA foreign_keys = OFF;
-                 ALTER TABLE api_keys RENAME TO keys;
-                 DROP INDEX IF EXISTS idx_api_keys_secret;
-                 CREATE INDEX IF NOT EXISTS idx_keys_secret ON keys(secret_id, name COLLATE NOCASE);
-                 PRAGMA foreign_keys = ON;
-                 ",
-            )?;
-        }
+    fn migrate_v6_add_preset_includes(&self) -> Result<()> {
+        self.conn.execute_batch(
+            "PRAGMA foreign_keys = ON;
+             CREATE TABLE IF NOT EXISTS preset_includes (
+                 id TEXT PRIMARY KEY,
+                 preset_id TEXT NOT NULL REFERENCES presets(id) ON DELETE CASCADE,
+                 included_preset_id TEXT NOT NULL REFERENCES presets(id) ON DELETE CASCADE,
+                 sort_order INTEGER NOT NULL DEFAULT 0,
+                 created_at TEXT NOT NULL,
+                 UNIQUE(preset_id, included_preset_id)
+             );
+             CREATE INDEX IF NOT EXISTS idx_preset_includes_preset
+                 ON preset_includes(preset_id, sort_order);",
+        )?;
         Ok(())
     }
 
-    // ── V3: add tags_json to workspaces ─────────────────────────────────
+    // ── V7: add secret_fields table ───────────────────────────────────
 
-    fn migrate_v3_add_workspace_tags(&self) -> Result<()> {
-        if self.table_exists("workspaces")? && !self.column_exists("workspaces", "tags_json")? {
-            self.conn.execute(
-                "ALTER TABLE workspaces ADD COLUMN tags_json TEXT NOT NULL DEFAULT '[]'",
-                [],
-            )?;
-        }
+    fn migrate_v7_add_secret_fields(&self) -> Result<()> {
+        self.conn.execute_batch(
+            "PRAGMA foreign_keys = ON;
+             CREATE TABLE IF NOT EXISTS secret_fields (
+                 id TEXT PRIMARY KEY,
+                 secret_id TEXT NOT NULL REFERENCES secrets(id) ON DELETE CASCADE,
+                 label TEXT NOT NULL,
+                 field_type TEXT NOT NULL DEFAULT 'secret',
+                 encrypted_value TEXT,
+                 sensitive INTEGER NOT NULL DEFAULT 1,
+                 env_name TEXT,
+                 purpose TEXT,
+                 section TEXT,
+                 sort_order INTEGER NOT NULL DEFAULT 0,
+                 enabled INTEGER NOT NULL DEFAULT 1,
+                 expires_at TEXT,
+                 created_at TEXT NOT NULL,
+                 updated_at TEXT NOT NULL
+             );
+             CREATE INDEX IF NOT EXISTS idx_secret_fields_secret_id ON secret_fields(secret_id);
+             CREATE INDEX IF NOT EXISTS idx_secret_fields_env_name ON secret_fields(env_name);
+             CREATE INDEX IF NOT EXISTS idx_secret_fields_enabled ON secret_fields(enabled);",
+        )?;
         Ok(())
     }
 
-    // ── V4: fix workspace_variables column changes ──────────────────────
+    // ── V8: replace presets with presets ─────────────────────────────
+    //
+    // For databases created before the preset→preset migration this
+    // creates the new tables and removes the old ones.  Fresh databases
+    // (V1 already creates presets+preset_entries) are unaffected because
+    // the CREATE IF NOT EXISTS is a no-op.
 
-    fn migrate_v4_fix_workspace_variables(&self) -> Result<()> {
-        if self.table_exists("workspace_variables")? {
-            // Old schema had `api_key_id` instead of `key_id`.
-            if self.column_exists("workspace_variables", "api_key_id")? {
-                self.conn.execute("DELETE FROM workspace_variables", [])?;
-                self.conn
-                    .execute_batch("ALTER TABLE workspace_variables DROP COLUMN api_key_id;")?;
-            }
-            if !self.column_exists("workspace_variables", "key_id")? {
-                self.conn.execute("DELETE FROM workspace_variables", [])?;
-                self.conn.execute_batch(
-                    "ALTER TABLE workspace_variables ADD COLUMN key_id TEXT NOT NULL DEFAULT '';",
-                )?;
-            }
-        }
-        Ok(())
-    }
-
-    // ── V5: add expires_at to keys ────────────────────────────────────
-
-    fn migrate_v5_add_keys_expires_at(&self) -> Result<()> {
-        if self.table_exists("keys")? && !self.column_exists("keys", "expires_at")? {
-            self.conn
-                .execute("ALTER TABLE keys ADD COLUMN expires_at TEXT", [])?;
-        }
+    fn migrate_v8_replace_preset_with_preset(&self) -> Result<()> {
+        self.conn.execute_batch(
+            "PRAGMA foreign_keys = OFF;
+             CREATE TABLE IF NOT EXISTS presets (
+                 id TEXT PRIMARY KEY,
+                 name TEXT NOT NULL UNIQUE,
+                 description TEXT,
+                 tags_json TEXT NOT NULL DEFAULT '[]',
+                 created_at TEXT NOT NULL,
+                 updated_at TEXT NOT NULL
+             );
+             CREATE TABLE IF NOT EXISTS preset_entries (
+                 id TEXT PRIMARY KEY,
+                 preset_id TEXT NOT NULL REFERENCES presets(id) ON DELETE CASCADE,
+                 secret_id TEXT NOT NULL REFERENCES secrets(id) ON DELETE CASCADE,
+                 field_id TEXT NOT NULL REFERENCES secret_fields(id) ON DELETE CASCADE,
+                 env_name TEXT NOT NULL,
+                 sort_order INTEGER NOT NULL DEFAULT 0,
+                 enabled INTEGER NOT NULL DEFAULT 1,
+                 created_at TEXT NOT NULL,
+                 updated_at TEXT NOT NULL,
+                 UNIQUE(preset_id, env_name)
+             );
+             CREATE INDEX IF NOT EXISTS idx_preset_entries_preset
+                 ON preset_entries(preset_id, sort_order, env_name COLLATE NOCASE);
+             CREATE INDEX IF NOT EXISTS idx_preset_entries_lookup
+                 ON preset_entries(preset_id, env_name);
+             DROP TABLE IF EXISTS preset_variables;
+             DROP TABLE IF EXISTS presets;
+             PRAGMA foreign_keys = ON;",
+        )?;
         Ok(())
     }
 

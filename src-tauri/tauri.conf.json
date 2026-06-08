@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "KeyDock",
-  "version": "0.5.4",
+  "version": "0.6.0",
   "identifier": "dev.keydock.app",
   "build": {
     "beforeDevCommand": "bun run dev",
@@ -25,7 +25,9 @@
         {
           "identifier": "default",
           "description": "Default capability",
-          "windows": ["main"],
+          "windows": [
+            "main"
+          ],
           "permissions": [
             "core:default",
             "clipboard-manager:default",
@@ -56,7 +58,7 @@
     "updater": {
       "pubkey": "dW50cnRzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDFFOTIzNzI0MDM1OTA2NkQKUldSdEJsa0RKRGVTSGdrUWlYeHJIUFo5NkNWa2lSelpvT0w2TEkvZHN0UElnWW10ZlU0bTdYUlAK",
       "endpoints": [
-        "https://github.com/0xfig521/KeyDock/releases/latest/download/update.json"
+        "https://github.com/0xfig-labs/KeyDock/releases/latest/download/update.json"
       ],
       "windows": {
         "installMode": "passive"

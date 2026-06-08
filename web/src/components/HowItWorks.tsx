@@ -6,47 +6,47 @@ interface TerminalLine {
 }
 
 const terminalLines: TerminalLine[] = [
-  { text: "# Get your current active workspace", type: "comment" },
-  { text: "keydock current", type: "command" },
+  { text: "# Get your current active preset", type: "comment" },
+  { text: "keydock preset current", type: "command" },
   { text: "", type: "empty" },
-  { text: "# Activate the workspace for new shells", type: "comment" },
-  { text: "keydock activate startup", type: "command" },
+  { text: "# Activate a trusted env for new shells", type: "comment" },
+  { text: "keydock preset activate startup", type: "command" },
   { text: "", type: "empty" },
-  { text: "# Run a command with workspace env vars injected", type: "comment" },
+  { text: "# Inject the preset into one command only", type: "comment" },
   { text: "keydock run startup -- bun run dev", type: "command" },
   { text: "", type: "empty" },
-  { text: "# Remove active workspace cache", type: "comment" },
-  { text: "keydock deactivate", type: "command" },
+  { text: "# Clear the active env cache when done", type: "comment" },
+  { text: "keydock preset deactivate", type: "command" },
 ];
 
 const refTable: { command: string; description: string }[] = [
   {
-    command: "keydock activate <workspace>",
-    description: "Persist workspace env vars for new shells",
+    command: "keydock preset activate <preset>",
+    description: "Persist preset env vars for future shells",
   },
   {
-    command: "keydock deactivate",
-    description: "Remove the active plaintext env cache",
+    command: "keydock preset deactivate",
+    description: "Clear the active plaintext env cache",
   },
   {
-    command: "keydock current",
-    description: "Show the active workspace",
+    command: "keydock preset current",
+    description: "Show the active preset",
+  },
+  {
+    command: "keydock preset list",
+    description: "List presets and mapped env vars",
   },
   {
     command: "keydock hook <zsh|bash>",
     description: "Print shell hook code",
   },
   {
-    command: "keydock list",
-    description: "List workspaces and mapped env vars",
-  },
-  {
     command: "keydock open",
     description: "Open the KeyDock desktop app on macOS",
   },
   {
-    command: "keydock run <workspace> -- <cmd>",
-    description: "Run a command with workspace env vars",
+    command: "keydock run <preset> -- <cmd>",
+    description: "Inject preset env vars into one process",
   },
 ];
 
@@ -68,10 +68,10 @@ export function HowItWorks() {
     <section id="how-it-works" className="bg-card/30 py-16 md:py-24">
       <div className="max-w-6xl mx-auto px-4">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-foreground mb-4">
-          How it works
+          From vault to shell in seconds
         </h2>
         <p className="text-muted-foreground text-center max-w-xl mx-auto mb-12">
-          From vault to environment in two commands.
+          Store once, compose presets, then activate globally or inject into a single command.
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">

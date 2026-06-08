@@ -5,9 +5,9 @@
 <h1 align="center">KeyDock</h1>
 
 <p align="center">
-  <strong>Developer Secret Workspace for the AI era.</strong>
+  <strong>Reusable env presets for AI-era developers.</strong>
   <br />
-  Local-first secret management, workspace-based environment injection, and a polished desktop control center for modern developer workflows.
+  Store API keys locally, compose them into presets, and activate one global env set for all new terminals.
 </p>
 
 <p align="center">
@@ -29,7 +29,9 @@
 
 ## English
 
-> KeyDock turns scattered API keys, cloud tokens, model endpoints, and project-specific env vars into a **local encrypted workspace** you can activate from the desktop app or CLI.
+> KeyDock is a **local-first vault for developer API keys**, with activatable env presets. Store secrets locally, compose them into reusable presets, and activate one global env set for all new terminals.
+
+KeyDock is not trying to replace enterprise SecretOps platforms. It focuses on the developer workstation layer: solo developers, small teams, and AI-assisted coding workflows where `.env` sprawl and global shell exports are too easy to leak.
 
 ### Why KeyDock?
 
@@ -38,37 +40,44 @@ Modern developer workflows are full of secrets: AI provider keys, proxy URLs, ac
 KeyDock gives you a safer loop:
 
 1. Store secrets in a local encrypted vault.
-2. Group keys by service and workspace.
-3. Map keys to environment variables.
-4. Activate a workspace for new shells, or run one command with env vars injected.
+2. Create presets from templates (OpenAI, Anthropic, Cloudflare, Vercel, Supabase, Stripe, etc.).
+3. Compose presets together — `fullstack-dev` includes `ai-dev` and `cloud-deploy`.
+4. Activate one preset, and every new terminal inherits the same trusted env vars.
+
+The next product direction is **agent-safe secret injection**: give Codex, Claude Code, Cursor, scripts, and dev servers only the scoped variables they need for one command, with redaction and local auditability as the trust layer.
 
 ### Highlights
 
 | Capability | What it does |
 | --- | --- |
-| **Local encrypted vault** | Keeps secret groups and key entries on your machine. |
-| **Workspace activation** | Persists a selected workspace into KeyDock's active env cache for new shells. |
-| **One-shot command injection** | Runs a command with a workspace's env vars without changing global shell state. |
-| **Desktop control center** | Tauri + React UI for dashboard, secrets, workspaces, audit, and settings. |
-| **Quick-start presets** | Built-in presets for OpenRouter, DeepSeek, Cloudflare, and Tavily. |
+| **Local encrypted vault** | Keeps secrets on your machine with Argon2id + ChaCha20Poly1305. |
+| **Preset templates** | Built-in templates for OpenAI, Anthropic, Cloudflare, Vercel, Supabase, Stripe, and more. |
+| **Preset composition** | Combine presets — `fullstack-dev` includes `ai-dev` + `cloud-deploy`. |
+| **Preset activation** | Activate one preset for all new terminals. No more `.env` sprawl. |
+| **One-shot command injection** | Run a command with a preset's env vars without changing global shell state. |
+| **Desktop control center** | Tauri + React UI for dashboard, secrets, presets, audit, and settings. |
 | **Audit visibility** | Tracks sensitive actions such as reveal, copy, export, and mutations. |
 | **Shell integration** | Generates hooks for `zsh` and `bash`. |
 | **Bilingual UI foundation** | Includes English and Chinese locale files powered by i18next. |
+| **AI-agent-safe direction** | Roadmap focus: scoped injection, output redaction, and command-level audit trails. |
 
 ### How it feels
 
 ```bash
-# Activate a workspace for future shells
-keydock activate startup
+# Activate a preset for future shells
+keydock preset activate fullstack-dev
 
 # Check what is currently active
-keydock current
+keydock preset current
 
-# Run a command with a workspace injected just for this process
-keydock run startup -- bun run dev
+# Preview what env vars a preset will export
+keydock preset preview fullstack-dev
 
-# Clean up active workspace cache
-keydock deactivate
+# Run a command with a preset injected just for this process
+keydock run fullstack-dev -- bun run dev
+
+# Clean up active preset cache
+keydock preset deactivate
 ```
 
 ### Project architecture
@@ -76,12 +85,12 @@ keydock deactivate
 ```text
 KeyDock
 ├─ src/                  # React desktop UI
-│  ├─ components/         # Dashboard, secrets, workspaces, audit, settings
-│  ├─ hooks/              # Vault, secrets, keys, workspaces, clipboard, theme, i18n
+│  ├─ components/         # Dashboard, secrets, presets, audit, settings
+│  ├─ hooks/              # Vault, secrets, presets, clipboard, theme, i18n
 │  ├─ i18n/               # English / Chinese locale resources
 │  └─ lib/tauri.ts        # Typed frontend bridge to Tauri commands
 ├─ src-tauri/             # Tauri shell and native command handlers
-├─ crates/keydock-core/   # Vault, crypto, storage, models, workspace env logic
+├─ crates/keydock-core/   # Vault, crypto, storage, models, preset env logic
 └─ crates/keydock-cli/    # `keydock` command-line interface
 ```
 
@@ -121,13 +130,16 @@ cargo run -p keydock-cli -- --help
 ### CLI reference
 
 ```bash
-keydock activate <workspace>      # Persist workspace env vars for new shells
-keydock deactivate                # Remove the active plaintext env cache
-keydock current                   # Show the active workspace
-keydock hook <zsh|bash>           # Print shell hook code
-keydock list                      # List workspaces and mapped env vars
-keydock open                      # Open the KeyDock desktop app on macOS
-keydock run <workspace> -- <cmd>  # Run a command with workspace env vars
+keydock preset templates            # List available preset templates
+keydock preset list                 # List all presets
+keydock preset show <preset>        # Show preset details
+keydock preset preview <preset>     # Preview env vars without activating
+keydock preset activate <preset>    # Activate preset for new shells
+keydock preset current              # Show the active preset
+keydock preset deactivate           # Remove the active preset cache
+keydock hook <zsh|bash>             # Print shell hook code
+keydock open                        # Open the KeyDock desktop app on macOS
+keydock run <preset> -- <cmd>       # Run a command with preset env vars
 ```
 
 ### Security model
@@ -137,20 +149,23 @@ KeyDock is designed as a **local-first** vault:
 - A master password derives a key with **Argon2id**.
 - A local data-encryption key is decrypted after unlock.
 - The decrypted key stays in app memory while the vault is unlocked.
-- Workspace activation writes a plaintext env cache so new shells can load mapped variables.
+- Preset activation writes a plaintext env cache so new shells can load mapped variables.
+- One-shot command injection avoids polluting the global shell and is the preferred path for AI-agent or automation workflows.
 - Touch ID / passkey unlock is planned as a convenience path, not the root trust anchor.
 
-> Treat activated workspace env caches like any other plaintext shell secret: convenient, local, and intentionally short-lived in your workflow.
+> Treat activated preset env caches like any other plaintext shell secret: convenient, local, and intentionally short-lived in your workflow.
+
+For AI coding agents, prefer `keydock run <preset> -- <cmd>` over globally exporting secrets. The intended trust boundary is command-scoped access, not “the agent can read the whole shell environment”.
 
 ### Current scope
 
 Implemented / in progress:
 
-- Local encrypted secret groups
-- Multiple key entries per secret
-- Sensitive and non-sensitive entries
-- Workspace-to-env mapping
-- CLI workspace activation and one-shot command injection
+- Local encrypted secret storage
+- Preset templates (OpenAI, Anthropic, Cloudflare, Vercel, Supabase, Stripe, etc.)
+- Preset composition (include other presets)
+- Preset activation and deactivation
+- CLI preset management and one-shot command injection
 - Tauri desktop UI
 - Quick copy formats
 - Audit log UI
@@ -158,13 +173,38 @@ Implemented / in progress:
 
 Deferred:
 
+- Agent-safe scoped secret injection presets
+- Output redaction for command logs
+- Local secret health checks
+- Repo / agent config scanner for leaked secrets
 - Local HTTP API
-- Health checks
 - Cloud sync
 - Team sharing
 - RBAC
 - Plugin system
-- Automatic workspace switching
+- Automatic preset switching
+
+### Roadmap focus
+
+#### v0.6: Launch-ready developer workflow
+
+- Keep all version metadata and release/update URLs aligned with the `0xfig-labs/KeyDock` repository.
+- Improve first-run onboarding: create vault, add a first secret from template, create preset, activate it.
+- Add screenshot / GIF slots to the website for vault UI, preset composition, and CLI injection.
+- Document unsigned/ad-hoc macOS distribution clearly while preparing Developer ID signing and notarization.
+
+#### v0.7: AI-agent-safe mode
+
+- Command-scoped allowlists for env vars.
+- Agent profiles for Codex, Claude Code, Cursor, and generic shell.
+- Local audit events for which command accessed which preset variables.
+- Redaction helpers for logs and copied command output.
+
+#### Later
+
+- Local secret health checks and rotation reminders.
+- Encrypted import/export for lightweight sharing.
+- Optional team/cloud sync only after the local-first workflow is proven.
 
 ### Development workflow
 

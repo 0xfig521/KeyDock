@@ -5,9 +5,9 @@
 <h1 align="center">KeyDock</h1>
 
 <p align="center">
-  <strong>面向 AI 时代的开发者密钥工作台。</strong>
+  <strong>面向 AI 时代开发者的可复用环境变量 Presets。</strong>
   <br />
-  本地优先的密钥管理、基于工作区的环境变量注入，以及一个精致的桌面控制中心。
+  本地存储 API Keys，组合成 Presets，一键激活到所有新终端。
 </p>
 
 <p align="center">
@@ -27,7 +27,9 @@
 
 ---
 
-> KeyDock 把分散的 API Key、云服务 Token、模型端点和项目级环境变量，收进一个**本地加密的工作区**；你可以通过桌面端或 CLI 一键激活。
+> KeyDock 是**本地优先的开发者 API Key 保险库**，并支持一键激活环境变量 Presets。本地保存密钥，组合成可复用的 Presets，一键激活到所有新终端。
+
+KeyDock 不打算一开始就替代企业级 SecretOps / Vault 平台。它优先解决开发者工作站这一层：个人开发者、小团队、AI 辅助编程场景里，`.env` 四处复制和全局 shell export 太容易泄露。
 
 ## 为什么需要 KeyDock？
 
@@ -38,37 +40,44 @@
 KeyDock 提供一个更清晰的闭环：
 
 1. 把密钥存进本地加密保险库。
-2. 按服务和工作区组织 Key。
-3. 将 Key 映射为环境变量。
-4. 为新 shell 激活一个工作区，或只给某一次命令注入环境变量。
+2. 从模板创建 Presets（OpenAI、Anthropic、Cloudflare、Vercel、Supabase、Stripe 等）。
+3. 组合 Presets —— `fullstack-dev` 包含 `ai-dev` 和 `cloud-deploy`。
+4. 激活一个 Preset，所有新终端都继承同一组可信环境变量。
+
+下一阶段的产品方向是 **agent-safe secret injection**：让 Codex、Claude Code、Cursor、脚本和 dev server 只拿到某个命令所需的 scoped 变量，并用本地审计与输出脱敏建立信任。
 
 ## 亮点功能
 
 | 能力 | 说明 |
 | --- | --- |
-| **本地加密保险库** | Secret 分组与 Key 条目保存在本机。 |
-| **工作区激活** | 将选中的工作区写入 KeyDock 的 active env cache，供新 shell 加载。 |
-| **单次命令注入** | 不污染全局 shell 状态，只给当前命令注入工作区环境变量。 |
-| **桌面控制台** | 基于 Tauri + React，包含 Dashboard、Secrets、Workspaces、Audit、Settings。 |
-| **快速预设** | 内置 OpenRouter、DeepSeek、Cloudflare、Tavily 等常用服务预设。 |
+| **本地加密保险库** | 使用 Argon2id + ChaCha20Poly1305 将密钥保存在本机。 |
+| **Preset 模板** | 内置 OpenAI、Anthropic、Cloudflare、Vercel、Supabase、Stripe 等常用服务模板。 |
+| **Preset 组合** | 组合多个 Presets —— `fullstack-dev` 包含 `ai-dev` + `cloud-deploy`。 |
+| **Preset 激活** | 激活一个 Preset 供所有新终端使用。告别 `.env` 混乱。 |
+| **单次命令注入** | 不污染全局 shell 状态，只给当前命令注入 preset 环境变量。 |
+| **桌面控制台** | 基于 Tauri + React，包含 Dashboard、Secrets、Presets、Audit、Settings。 |
 | **审计可见性** | 记录 reveal、copy、export、mutation 等敏感操作。 |
 | **Shell 集成** | 支持生成 `zsh` / `bash` hook。 |
 | **双语基础** | 内置 English / 中文 locale，基于 i18next。 |
+| **AI-agent-safe 方向** | 路线图重点：scoped injection、输出脱敏、命令级审计。 |
 
 ## 使用体验
 
 ```bash
-# 为后续新 shell 激活一个工作区
-keydock activate startup
+# 为后续新 shell 激活一个 preset
+keydock preset activate fullstack-dev
 
 # 查看当前激活状态
-keydock current
+keydock preset current
 
-# 仅为这一次命令注入工作区环境变量
-keydock run startup -- bun run dev
+# 预览 preset 将导出的环境变量
+keydock preset preview fullstack-dev
 
-# 清除当前激活的工作区缓存
-keydock deactivate
+# 仅为这一次命令注入 preset 环境变量
+keydock run fullstack-dev -- bun run dev
+
+# 清除当前激活的 preset 缓存
+keydock preset deactivate
 ```
 
 ## 项目架构
@@ -76,12 +85,12 @@ keydock deactivate
 ```text
 KeyDock
 ├─ src/                  # React 桌面端 UI
-│  ├─ components/         # Dashboard、Secrets、Workspaces、Audit、Settings
-│  ├─ hooks/              # Vault、Secrets、Keys、Workspaces、Clipboard、Theme、i18n
+│  ├─ components/         # Dashboard、Secrets、Presets、Audit、Settings
+│  ├─ hooks/              # Vault、Secrets、Presets、Clipboard、Theme、i18n
 │  ├─ i18n/               # 英文 / 中文语言资源
 │  └─ lib/tauri.ts        # 前端到 Tauri commands 的类型化桥接
 ├─ src-tauri/             # Tauri 外壳与原生命令处理
-├─ crates/keydock-core/   # Vault、Crypto、Storage、Models、Workspace env 逻辑
+├─ crates/keydock-core/   # Vault、Crypto、Storage、Models、Preset env 逻辑
 └─ crates/keydock-cli/    # `keydock` 命令行工具
 ```
 
@@ -121,13 +130,16 @@ cargo run -p keydock-cli -- --help
 ## CLI 命令速查
 
 ```bash
-keydock activate <workspace>      # 为新 shell 持久化工作区环境变量
-keydock deactivate                # 删除当前 active plaintext env cache
-keydock current                   # 查看当前激活的工作区
-keydock hook <zsh|bash>           # 输出 shell hook 代码
-keydock list                      # 列出工作区和已映射的环境变量
-keydock open                      # 在 macOS 上打开 KeyDock 桌面端
-keydock run <workspace> -- <cmd>  # 使用工作区环境变量运行命令
+keydock preset templates            # 列出可用的 preset 模板
+keydock preset list                 # 列出所有 preset
+keydock preset show <preset>        # 查看 preset 详情
+keydock preset preview <preset>     # 预览将导出的环境变量
+keydock preset activate <preset>    # 为新 shell 激活 preset
+keydock preset current              # 查看当前激活的 preset
+keydock preset deactivate           # 删除当前 active preset 缓存
+keydock hook <zsh|bash>             # 输出 shell hook 代码
+keydock open                        # 在 macOS 上打开 KeyDock 桌面端
+keydock run <preset> -- <cmd>       # 使用 preset 环境变量运行命令
 ```
 
 ## 安全模型
@@ -137,20 +149,23 @@ KeyDock 的默认设计是 **local-first**：
 - 使用 master password，并通过 **Argon2id** 派生密钥。
 - 解锁后解密本地 data-encryption key。
 - 保险库解锁期间，解密后的 key 只保留在应用内存中。
-- 工作区激活会写入 plaintext env cache，让新 shell 能加载映射后的变量。
+- 预设激活会写入 plaintext env cache，让新 shell 能加载映射后的变量。
+- 单次命令注入不会污染全局 shell，是 AI agent 和自动化命令的优先推荐路径。
 - Touch ID / passkey 计划作为便利解锁路径，而不是唯一根密钥。
 
-> 请像对待其它明文 shell secret 一样对待已激活的工作区缓存：它是本地的、方便的，也应当只在需要时短期存在。
+> 请像对待其它明文 shell secret 一样对待已激活的预设缓存：它是本地的、方便的，也应当只在需要时短期存在。
+
+对于 AI 编程助手，优先使用 `keydock run <preset> -- <cmd>`，不要全局导出密钥。KeyDock 期望建立的信任边界是“命令级访问”，而不是“agent 能读取整个 shell 环境”。
 
 ## 当前范围
 
 已实现 / 进行中：
 
-- 本地加密 Secret 分组
-- 每个 Secret 支持多个 Key 条目
-- 敏感与非敏感条目
-- Workspace 到环境变量的映射
-- CLI 工作区激活与单次命令注入
+- 本地加密 Secret 存储
+- Preset 模板（OpenAI、Anthropic、Cloudflare、Vercel、Supabase、Stripe 等）
+- Preset 组合（include 其它 presets）
+- Preset 激活与停用
+- CLI preset 管理与单次命令注入
 - Tauri 桌面端 UI
 - Quick copy 格式
 - Audit log UI
@@ -158,13 +173,38 @@ KeyDock 的默认设计是 **local-first**：
 
 暂缓：
 
+- Agent-safe scoped secret injection presets
+- 命令日志输出脱敏
+- 本地 secret health checks
+- Repo / agent config 泄露扫描
 - Local HTTP API
-- Health checks
 - Cloud sync
 - Team sharing
 - RBAC
 - Plugin system
-- Automatic workspace switching
+- Automatic preset switching
+
+## 路线图重点
+
+### v0.6：可发布、可演示的开发者工作流
+
+- 保持所有版本元数据、发布地址、更新地址都指向 `0xfig-labs/KeyDock`。
+- 优化首次使用：创建保险库、从模板添加第一个 secret、创建 preset、激活它。
+- 在官网预留截图 / GIF：vault UI、preset 组合、CLI injection。
+- 清晰说明 unsigned/ad-hoc macOS 分发限制，同时准备 Developer ID signing 和 notarization。
+
+### v0.7：AI-agent-safe mode
+
+- 命令级环境变量 allowlist。
+- Agent profiles：Codex、Claude Code、Cursor、generic shell。
+- 本地审计：哪个命令访问了哪个 preset 变量。
+- 日志和复制命令输出的脱敏辅助。
+
+### 后续
+
+- 本地 secret health checks 和轮换提醒。
+- 加密导入/导出，用于轻量共享。
+- 等 local-first 工作流验证后，再考虑可选 team/cloud sync。
 
 ## 开发工作流
 

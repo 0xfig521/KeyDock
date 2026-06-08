@@ -5,13 +5,13 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "react-i18next"
 
-export type SidebarTab = "dashboard" | "secrets" | "workspaces" | "audit" | "settings"
+export type SidebarTab = "dashboard" | "secrets" | "presets" | "audit" | "settings"
 
 interface SidebarProps {
   activeTab: SidebarTab
   onTabChange: (tab: SidebarTab) => void
   secretCount: number
-  workspaceCount: number
+  presetCount: number
   onLockClick: () => void
   updateStatus: "idle" | "checking" | "available" | "downloading" | "installing" | "done" | "error"
   onCheckUpdate: () => void
@@ -21,7 +21,7 @@ export function Sidebar({
   activeTab,
   onTabChange,
   secretCount,
-  workspaceCount,
+  presetCount,
   onLockClick,
   updateStatus,
   onCheckUpdate,
@@ -35,7 +35,7 @@ export function Sidebar({
   }[] = [
     { id: "dashboard", label: t("sidebar.dashboard"), icon: HomeIcon },
     { id: "secrets", label: t("sidebar.secrets"), icon: KeyRoundIcon },
-    { id: "workspaces", label: t("sidebar.workspaces"), icon: LayersIcon },
+    { id: "presets", label: t("sidebar.presets"), icon: LayersIcon },
     { id: "audit", label: t("sidebar.audit"), icon: ShieldIcon },
     { id: "settings", label: t("sidebar.settings"), icon: SettingsIcon },
   ]
@@ -79,8 +79,8 @@ export function Sidebar({
             const count =
               id === "secrets"
                 ? secretCount
-                : id === "workspaces"
-                  ? workspaceCount
+                : id === "presets"
+                  ? presetCount
                   : null
             return (
               <button

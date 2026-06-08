@@ -11,7 +11,6 @@ export interface UseClipboard {
     text: string
     label: string
     targetId?: string
-    workspaceId?: string | null
     envName?: string | null
   }) => Promise<void>
 }
@@ -22,12 +21,11 @@ export function useClipboard(): UseClipboard {
   const clearVisualRef = useRef<number | null>(null)
 
   const copy = useCallback<UseClipboard["copy"]>(
-    async ({ text, label, targetId, workspaceId, envName }) => {
+    async ({ text, label, targetId, envName }) => {
       try {
         await copyWithAudit({
           text,
           targetId: targetId ?? null,
-          workspaceId: workspaceId ?? null,
           envName: envName ?? null,
         })
         setCopiedText(text)

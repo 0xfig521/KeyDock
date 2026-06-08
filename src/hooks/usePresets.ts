@@ -1,27 +1,27 @@
 import { useCallback, useState } from "react"
 import { useToast } from "@/hooks/useToast"
 import {
-  createWorkspace as createWorkspaceApi,
-  deleteWorkspace as deleteWorkspaceApi,
-  listWorkspaces,
+  createPreset as createPresetApi,
+  deletePreset as deletePresetApi,
+  listPresets,
 } from "@/lib/tauri"
-import { normalizeWorkspaceName } from "@/constants"
-import type { Workspace } from "@/types"
+import { normalizePresetName } from "@/constants"
+import type { Preset } from "@/types"
 
-export interface UseWorkspaces {
-  workspaces: Workspace[]
+export interface UsePresets {
+  presets: Preset[]
   formName: string
   setFormName: (name: string) => void
   submitting: boolean
   loading: boolean
-  create: () => Promise<Workspace | null>
+  create: () => Promise<Preset | null>
   remove: (id: string, name: string) => Promise<void>
   refresh: () => Promise<void>
 }
 
-export function useWorkspaces(): UseWorkspaces {
+export function usePresets(): UsePresets {
   const { show } = useToast()
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
+  const [presets, setPresets] = useState<Preset[]>([])
   const [formName, setFormName] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -29,8 +29,8 @@ export function useWorkspaces(): UseWorkspaces {
   const refresh = useCallback(async () => {
     try {
       setLoading(true)
-      const list = await listWorkspaces()
-      setWorkspaces(list)
+      const list = await listPresets()
+      setPresets(list)
     } catch (e) {
       show(extractMessage(e), "error")
     } finally {
@@ -38,43 +38,42 @@ export function useWorkspaces(): UseWorkspaces {
     }
   }, [show])
 
-  // Apply kebab-case normalization on every input.
   const setFormNameNormalized = useCallback((raw: string) => {
-    setFormName(normalizeWorkspaceName(raw))
+    setFormName(normalizePresetName(raw))
   }, [])
 
-  const create = useCallback(async (): Promise<Workspace | null> => {
+  const create = useCallback(async (): Promise<Preset | null> => {
     const name = formName.trim()
     if (!name) return null
     if (
-      workspaces.some(
-        (w) => w.name.toLowerCase() === name.toLowerCase(),
+      presets.some(
+        (p) => p.name.toLowerCase() === name.toLowerCase(),
       )
     ) {
-      show(`A workspace with the name "${name}" already exists.`, "error")
+      show(`A preset with the name "${name}" already exists.`, "error")
       return null
     }
     try {
       setSubmitting(true)
-      const ws = await createWorkspaceApi(name, null)
-      show(`Workspace created: ${ws.name}`, "success")
+      const p = await createPresetApi(name, null)
+      show(`Preset created: ${p.name}`, "success")
       setFormName("")
       await refresh()
-      return ws
+      return p
     } catch (e) {
       show(extractMessage(e), "error")
       return null
     } finally {
       setSubmitting(false)
     }
-  }, [formName, refresh, show, workspaces])
+  }, [formName, refresh, show, presets])
 
   const remove = useCallback(
     async (id: string, name: string) => {
-      if (!confirm(`Delete workspace "${name}"?`)) return
+      if (!confirm(`Delete preset "${name}"?`)) return
       try {
-        await deleteWorkspaceApi(id)
-        show(`Deleted workspace: ${name}`, "info")
+        await deletePresetApi(id)
+        show(`Deleted preset: ${name}`, "info")
         await refresh()
       } catch (e) {
         show(extractMessage(e), "error")
@@ -84,7 +83,7 @@ export function useWorkspaces(): UseWorkspaces {
   )
 
   return {
-    workspaces,
+    presets,
     formName,
     setFormName: setFormNameNormalized,
     submitting,

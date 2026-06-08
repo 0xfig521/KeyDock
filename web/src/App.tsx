@@ -26,11 +26,16 @@ function App() {
             "@context": "https://schema.org",
             "@type": "SoftwareApplication",
             name: "KeyDock",
+            url: "https://keydock.0xfig.xyz/",
+            image: "https://keydock.0xfig.xyz/og-image.png",
             applicationCategory: "DeveloperApplication",
+            applicationSubCategory: "Secret management and environment variable presets",
             operatingSystem: "macOS, Windows, Linux",
             description:
-              "Local-first encrypted secret management for developers. Store API keys, cloud tokens, and project env vars in a local encrypted vault.",
+              "Local encrypted API key vault with reusable env presets. Store developer secrets locally, compose presets, activate shell environments, or inject scoped variables into one command.",
             offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+            softwareHelp: "https://github.com/0xfig-labs/KeyDock#readme",
+            downloadUrl: "https://github.com/0xfig-labs/KeyDock/releases",
           }),
         }}
       />
@@ -42,8 +47,8 @@ function App() {
         screenshotSrc="/hero-screenshot.png"
       />
       <SocialProof
-        quote="Switching between AI API providers used to mean hunting through .bash_history for that one key export. Now it is one `keydock activate`."
-        attribution="Developer, early adopter"
+        quote="Switching models, clouds, and client projects used to mean chasing scattered .env files. Now one preset gives every new shell the exact env vars it needs."
+        attribution="Early KeyDock user"
         stars={loading ? 0 : stars}
         downloads={loading ? 0 : downloads}
       />
@@ -54,11 +59,11 @@ function App() {
       <Pricing
         features={[
           "Unlimited secrets",
-          "Unlimited workspaces",
+          "Unlimited presets",
+          "Preset composition",
           "All CLI commands",
           "Audit log",
           "Shell integration",
-          "Presets",
         ]}
         primaryCta={{ label: "Download on GitHub", href: RELEASES_URL }}
         secondaryCta={{ label: "Star on GitHub", href: GITHUB_URL }}

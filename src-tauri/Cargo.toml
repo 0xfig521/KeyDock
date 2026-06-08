@@ -1,7 +1,7 @@
 [package]
 name = "keydock-app"
-version = "0.5.4"
-description = "Developer Secret Workspace for AI Era"
+version = "0.6.0"
+description = "Local API Key Vault and Env Presets for Developers"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -24,4 +24,5 @@ tauri-plugin-clipboard-manager = "2"
 tauri-plugin-opener = "2"
 tauri-plugin-shell = "2"
 notify = "7"
+open = "5"
 tauri-plugin-updater = "2"

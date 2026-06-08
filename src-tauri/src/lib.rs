@@ -1,8 +1,9 @@
 use keydock_core::{
-    active_workspace_path, current_active_workspace, deactivate_workspace, default_database_path,
-    format_env, initialize_vault, install_shell_hook, shell_integration_status, unlock_vault,
-    vault_status, ActiveWorkspace, AppStore, AuditLog, Key, KeyInput, Secret, SecretInput,
-    ShellIntegrationStatus, VaultStatus, Workspace, WorkspaceVariable,
+    active_preset_path, current_active_preset, deactivate_active_preset as core_deactivate_preset,
+    default_database_path, initialize_vault, install_shell_hook, keydock_config_dir,
+    shell_integration_status, unlock_vault, vault_status, ActivePreset, AppStore, AuditLog, Preset,
+    PresetEntry, Secret, SecretField, SecretFieldInput, SecretInput, ShellIntegrationStatus,
+    VaultStatus,
 };
 use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::Serialize;
@@ -56,12 +57,6 @@ fn get_vault_status(state: State<'_, AppState>) -> CommandResult<VaultStatus> {
 fn setup_master_password(state: State<'_, AppState>, password: String) -> CommandResult<()> {
     let dek = initialize_vault(&state.db_path, &password)?;
     let store = AppStore::open(state.db_path.clone(), dek)?;
-
-    // Auto-create a default workspace for brand-new vaults.
-    if store.list_workspaces()?.is_empty() {
-        store.create_workspace("default", Some("Default workspace"))?;
-    }
-
     *state
         .store
         .lock()
@@ -118,126 +113,90 @@ fn delete_secret(state: State<'_, AppState>, id_or_name: String) -> CommandResul
 }
 
 #[tauri::command]
-fn list_keys(state: State<'_, AppState>, secret: Option<String>) -> CommandResult<Vec<Key>> {
-    Ok(state.with_store(|s| s.list_keys(secret.as_deref()))?)
+fn list_presets(state: State<'_, AppState>) -> CommandResult<Vec<Preset>> {
+    Ok(state.with_store(|s| s.list_presets())?)
 }
 
 #[tauri::command]
-fn create_key(state: State<'_, AppState>, secret: String, input: KeyInput) -> CommandResult<Key> {
-    Ok(state.with_store(|s| s.create_key(&secret, input))?)
-}
-
-#[tauri::command]
-fn update_key(state: State<'_, AppState>, key: String, input: KeyInput) -> CommandResult<Key> {
-    Ok(state.with_store(|s| s.update_key(&key, input))?)
-}
-
-#[tauri::command]
-fn delete_key(state: State<'_, AppState>, key: String) -> CommandResult<()> {
-    Ok(state.with_store(|s| s.delete_key(&key))?)
-}
-
-#[tauri::command]
-fn reveal_key(
-    state: State<'_, AppState>,
-    key: String,
-    workspace_id: Option<String>,
-) -> CommandResult<String> {
-    Ok(state.with_store(|s| s.reveal_key(&key, workspace_id.as_deref()))?)
-}
-
-#[tauri::command]
-fn list_workspaces(state: State<'_, AppState>) -> CommandResult<Vec<Workspace>> {
-    Ok(state.with_store(|s| s.list_workspaces())?)
-}
-
-#[tauri::command]
-fn create_workspace(
+fn create_preset(
     state: State<'_, AppState>,
     name: String,
     description: Option<String>,
-) -> CommandResult<Workspace> {
-    Ok(state.with_store(|s| s.create_workspace(&name, description.as_deref()))?)
+) -> CommandResult<Preset> {
+    Ok(state.with_store(|s| s.create_preset(keydock_core::PresetInput { name, description }))?)
 }
 
 #[tauri::command]
-fn delete_workspace(state: State<'_, AppState>, id_or_name: String) -> CommandResult<()> {
-    Ok(state.with_store(|s| s.delete_workspace(&id_or_name))?)
+fn delete_preset(state: State<'_, AppState>, id_or_name: String) -> CommandResult<()> {
+    Ok(state.with_store(|s| s.delete_preset(&id_or_name))?)
 }
 
 #[tauri::command]
-fn set_workspace_variable(
+fn add_preset_entry(
+    app: AppHandle,
     state: State<'_, AppState>,
-    workspace: String,
+    preset: String,
     env_name: Option<String>,
-    key: String,
-) -> CommandResult<WorkspaceVariable> {
-    Ok(state.with_store(|s| s.set_workspace_variable(&workspace, env_name.as_deref(), &key))?)
+    field_id: String,
+) -> CommandResult<PresetEntry> {
+    let entry =
+        state.with_store(|s| s.add_preset_entry(&preset, &field_id, env_name.as_deref()))?;
+    let _ = app.emit("active-preset-changed", ());
+    Ok(entry)
 }
 
 #[tauri::command]
-fn add_secret_default_keys_to_workspace(
+fn list_preset_entries(
     state: State<'_, AppState>,
-    workspace: String,
-    secret: String,
-) -> CommandResult<Vec<WorkspaceVariable>> {
-    Ok(state.with_store(|s| s.add_secret_default_keys_to_workspace(&workspace, &secret))?)
+    preset: String,
+) -> CommandResult<Vec<PresetEntry>> {
+    Ok(state.with_store(|s| s.list_preset_entries(&preset))?)
 }
 
 #[tauri::command]
-fn list_workspace_variables(
+fn remove_preset_entry(
+    app: AppHandle,
     state: State<'_, AppState>,
-    workspace: String,
-) -> CommandResult<Vec<WorkspaceVariable>> {
-    Ok(state.with_store(|s| s.list_workspace_variables(&workspace))?)
-}
-
-#[tauri::command]
-fn delete_workspace_variable(
-    state: State<'_, AppState>,
-    workspace: String,
+    preset: String,
     env_name: String,
 ) -> CommandResult<()> {
-    Ok(state.with_store(|s| s.delete_workspace_variable(&workspace, &env_name))?)
-}
-
-#[tauri::command]
-fn export_env(state: State<'_, AppState>, workspace: String) -> CommandResult<String> {
-    Ok(state.with_store(|s| s.export_env_text(&workspace))?)
-}
-
-#[tauri::command]
-fn activate_workspace(
-    app: AppHandle,
-    state: State<'_, AppState>,
-    workspace: String,
-) -> CommandResult<ActiveWorkspace> {
-    let active = state.with_store(|s| s.activate_workspace(&workspace))?;
-    let _ = app.emit("active-workspace-changed", ());
-    Ok(active)
-}
-
-#[tauri::command]
-fn activate_key(
-    app: AppHandle,
-    state: State<'_, AppState>,
-    key: String,
-) -> CommandResult<ActiveWorkspace> {
-    let active = state.with_store(|s| s.activate_key(&key))?;
-    let _ = app.emit("active-workspace-changed", ());
-    Ok(active)
-}
-
-#[tauri::command]
-fn deactivate_active_workspace(app: AppHandle) -> CommandResult<()> {
-    deactivate_workspace()?;
-    let _ = app.emit("active-workspace-changed", ());
+    state.with_store(|s| s.remove_preset_entry(&preset, &env_name))?;
+    let _ = app.emit("active-preset-changed", ());
     Ok(())
 }
 
 #[tauri::command]
-fn get_active_workspace() -> CommandResult<Option<ActiveWorkspace>> {
-    Ok(current_active_workspace()?)
+fn export_preset_env(state: State<'_, AppState>, preset: String) -> CommandResult<String> {
+    Ok(state.with_store(|s| s.export_preset_env(&preset))?)
+}
+
+#[tauri::command]
+fn activate_preset(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    preset: String,
+) -> CommandResult<ActivePreset> {
+    let active = state.with_store(|s| s.activate_preset(&preset))?;
+    let _ = app.emit("active-preset-changed", ());
+    Ok(active)
+}
+
+#[tauri::command]
+fn deactivate_active_preset(app: AppHandle) -> CommandResult<()> {
+    core_deactivate_preset()?;
+    let _ = app.emit("active-preset-changed", ());
+    Ok(())
+}
+
+#[tauri::command]
+fn get_active_preset() -> CommandResult<Option<ActivePreset>> {
+    Ok(current_active_preset()?)
+}
+
+#[tauri::command]
+fn open_keydock_folder() -> CommandResult<()> {
+    let path = keydock_config_dir()?;
+    open::that(path).map_err(|e| anyhow::anyhow!("failed to open folder: {e}").into())
 }
 
 #[tauri::command]
@@ -320,12 +279,6 @@ fn get_shell_integration_status(shell: String) -> CommandResult<ShellIntegration
 }
 
 #[tauri::command]
-fn export_secret_env(state: State<'_, AppState>, secret: String) -> CommandResult<String> {
-    let env = state.with_store(|s| s.secret_env(&secret))?;
-    Ok(format_env(env))
-}
-
-#[tauri::command]
 fn list_audit_logs(state: State<'_, AppState>) -> CommandResult<Vec<AuditLog>> {
     Ok(state.with_store(|s| s.list_audit_logs(50))?)
 }
@@ -353,7 +306,7 @@ fn copy_with_audit(
     state: State<'_, AppState>,
     text: String,
     target_id: Option<String>,
-    workspace_id: Option<String>,
+    preset_id: Option<String>,
     env_name: Option<String>,
 ) -> CommandResult<()> {
     let mut clipboard = arboard::Clipboard::new().map_err(anyhow::Error::from)?;
@@ -362,7 +315,7 @@ fn copy_with_audit(
         s.audit(
             "copy",
             target_id.as_deref(),
-            workspace_id.as_deref(),
+            preset_id.as_deref(),
             env_name.as_deref(),
         )
     })?;
@@ -373,17 +326,122 @@ fn copy_with_audit(
 fn audit_copy(
     state: State<'_, AppState>,
     target_id: Option<String>,
-    workspace_id: Option<String>,
+    preset_id: Option<String>,
     env_name: Option<String>,
 ) -> CommandResult<()> {
     Ok(state.with_store(|s| {
         s.audit(
             "copy",
             target_id.as_deref(),
-            workspace_id.as_deref(),
+            preset_id.as_deref(),
             env_name.as_deref(),
         )
     })?)
+}
+
+// ---------------------------------------------------------------------------
+// Secret Field IPC commands
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+fn list_secret_fields(
+    state: State<'_, AppState>,
+    secret: String,
+) -> CommandResult<Vec<SecretField>> {
+    Ok(state.with_store(|s| s.list_secret_fields(&secret))?)
+}
+
+#[tauri::command]
+fn create_secret_field(
+    state: State<'_, AppState>,
+    secret: String,
+    input: SecretFieldInput,
+) -> CommandResult<SecretField> {
+    Ok(state.with_store(|s| s.create_secret_field(&secret, input))?)
+}
+
+#[tauri::command]
+fn update_secret_field(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    id: String,
+    input: SecretFieldInput,
+) -> CommandResult<SecretField> {
+    let field = state.with_store(|s| s.update_secret_field(&id, input))?;
+    let _ = app.emit("active-preset-changed", ());
+    Ok(field)
+}
+
+#[tauri::command]
+fn delete_secret_field(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    id: String,
+) -> CommandResult<()> {
+    state.with_store(|s| s.delete_secret_field(&id))?;
+    let _ = app.emit("active-preset-changed", ());
+    Ok(())
+}
+
+#[tauri::command]
+fn reveal_secret_field(state: State<'_, AppState>, id: String) -> CommandResult<String> {
+    Ok(state.with_store(|s| s.reveal_secret_field(&id))?)
+}
+
+#[tauri::command]
+fn reorder_secret_fields(
+    state: State<'_, AppState>,
+    secret: String,
+    field_ids: Vec<String>,
+) -> CommandResult<Vec<SecretField>> {
+    Ok(state.with_store(|s| s.reorder_secret_fields(&secret, field_ids))?)
+}
+
+#[tauri::command]
+fn include_preset(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    preset: String,
+    included: String,
+) -> CommandResult<()> {
+    state.with_store(|s| s.include_preset(&preset, &included))?;
+    let _ = app.emit("active-preset-changed", ());
+    Ok(())
+}
+
+#[tauri::command]
+fn remove_include_preset(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    preset: String,
+    included: String,
+) -> CommandResult<()> {
+    state.with_store(|s| s.remove_include_preset(&preset, &included))?;
+    let _ = app.emit("active-preset-changed", ());
+    Ok(())
+}
+
+#[tauri::command]
+fn list_preset_includes(state: State<'_, AppState>, preset: String) -> CommandResult<Vec<String>> {
+    let includes = state.with_store(|s| s.list_preset_includes(&preset))?;
+    Ok(includes
+        .into_iter()
+        .map(|i| i.included_preset_name.unwrap_or(i.included_preset_id))
+        .collect())
+}
+
+#[tauri::command]
+fn preview_preset(state: State<'_, AppState>, preset: String) -> CommandResult<Vec<String>> {
+    let preview = state.with_store(|s| s.preview_preset(&preset))?;
+    Ok(preview.env_names)
+}
+
+#[tauri::command]
+fn list_preset_templates() -> CommandResult<Vec<String>> {
+    Ok(keydock_core::list_preset_templates()
+        .into_iter()
+        .map(|t| t.name)
+        .collect())
 }
 
 /// Resolve the `keydock` CLI binary path at compile time.
@@ -403,9 +461,9 @@ fn cli_binary_source() -> std::path::PathBuf {
         .join("keydock")
 }
 
-/// Watch active_workspace.json for changes from CLI and notify the frontend.
-fn spawn_active_workspace_watcher(app: tauri::AppHandle) {
-    let path = match active_workspace_path() {
+/// Watch active-preset.json for changes from CLI and notify the frontend.
+fn spawn_active_preset_watcher(app: tauri::AppHandle) {
+    let path = match active_preset_path() {
         Ok(p) => p,
         Err(_) => return,
     };
@@ -430,7 +488,7 @@ fn spawn_active_workspace_watcher(app: tauri::AppHandle) {
             if !event.paths.iter().any(|p| p == &path) {
                 continue;
             }
-            let _ = app.emit("active-workspace-changed", ());
+            let _ = app.emit("active-preset-changed", ());
         }
     });
 }
@@ -445,7 +503,7 @@ pub fn run() {
             store: Mutex::new(None),
         })
         .setup(|app| {
-            spawn_active_workspace_watcher(app.handle().clone());
+            spawn_active_preset_watcher(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -457,33 +515,37 @@ pub fn run() {
             create_secret,
             update_secret,
             delete_secret,
-            list_keys,
-            create_key,
-            update_key,
-            delete_key,
-            reveal_key,
-            list_workspaces,
-            create_workspace,
-            delete_workspace,
-            set_workspace_variable,
-            add_secret_default_keys_to_workspace,
-            list_workspace_variables,
-            delete_workspace_variable,
-            export_env,
-            activate_workspace,
-            activate_key,
-            deactivate_active_workspace,
-            get_active_workspace,
             ensure_shell_hook,
             ensure_keydock_binary,
             install_shell_integration,
             get_shell_integration_status,
-            export_secret_env,
             list_audit_logs,
             quick_copy_text,
             clear_clipboard_if_matches,
             copy_with_audit,
-            audit_copy
+            audit_copy,
+            list_secret_fields,
+            create_secret_field,
+            update_secret_field,
+            delete_secret_field,
+            reveal_secret_field,
+            reorder_secret_fields,
+            list_presets,
+            create_preset,
+            delete_preset,
+            add_preset_entry,
+            list_preset_entries,
+            remove_preset_entry,
+            export_preset_env,
+            activate_preset,
+            deactivate_active_preset,
+            get_active_preset,
+            open_keydock_folder,
+            include_preset,
+            remove_include_preset,
+            list_preset_includes,
+            preview_preset,
+            list_preset_templates,
         ])
         .run(tauri::generate_context!())
         .expect("error while running KeyDock");

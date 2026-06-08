@@ -17,27 +17,27 @@ const features: {
 }[] = [
   {
     icon: Shield,
-    title: "Your keys, encrypted on your machine. Period.",
+    title: "A local encrypted vault for real developer secrets.",
     description:
-      "KeyDock keeps every secret group and key entry in a local SQLite database encrypted with ChaCha20Poly1305. Your master password never leaves the Argon2id key derivation call. There is no cloud sync, no server endpoint - the encryption happens before anything touches disk.",
+      "KeyDock stores API keys, tokens, base URLs, account IDs, and other service fields in a local SQLite vault encrypted with ChaCha20Poly1305. Your master password stays on your machine and drives Argon2id key derivation before secret data is written to disk.",
   },
   {
     icon: Layers,
-    title: "One command. All your env vars in place.",
+    title: "Composable presets instead of scattered .env files.",
     description:
-      "Define a workspace, map your secrets to environment variable names, then activate it. New shells inherit the mapped vars. Or skip the shell change and just run: keydock run startup -- bun run dev. No .env file to edit. No export statements.",
+      "Create reusable presets from services like OpenAI, Anthropic, Cloudflare, Vercel, Supabase, or Stripe. Compose presets together, map secret fields to env names, and activate one trusted environment for every new terminal.",
   },
   {
     icon: Monitor,
-    title: "A visual home for your secrets.",
+    title: "A desktop control center for secrets and presets.",
     description:
-      "Built with Tauri and React, the KeyDock desktop app gives you a dashboard for all your secrets, a workspace manager for organizing env mappings, an audit timeline, and quick-copy formatting. Switch between app and terminal seamlessly.",
+      "The Tauri + React app gives you a dashboard for secrets, preset composition, encrypted field editing, audit history, and quick-copy flows. Use the app for structure and the CLI for fast terminal context switches.",
   },
   {
     icon: Eye,
-    title: "Who revealed what. When. And how.",
+    title: "Command-scoped access with local auditability.",
     description:
-      "Every sensitive action - revealing a secret value, copying to clipboard, exporting a key, creating or deleting entries - is logged with a timestamp in the audit trail. For teams that need to answer 'did anyone just leak the production token in a demo?', the audit log is the first place to check.",
+      "Reveal, copy, export, preset activation, and secret mutations are recorded in a local audit trail. For AI-assisted workflows, prefer one-shot `keydock run` injection so an agent or script receives only the env vars needed for that command.",
   },
 ];
 
@@ -91,10 +91,10 @@ export function Features() {
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-            Why KeyDock?
+            Why KeyDock fits modern development
           </h2>
           <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
-            Four capabilities that change how you handle secrets every day.
+            A safer daily loop for developers who switch models, clouds, clients, and terminals all day.
           </p>
         </div>
         {features.map((feature, i) => (
