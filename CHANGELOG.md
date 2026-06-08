@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.2 - 2026-06-08
+
+### Fixes
+- Fix in-app update check failure: regenerate Tauri signing keypair with password and set up CI release signing.
+
 ## 0.6.1 - 2026-06-08
 
 ### Fixes
