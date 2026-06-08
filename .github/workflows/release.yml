@@ -128,7 +128,9 @@ jobs:
             exit 1
           fi
           echo "Signing $DMG_FILE..."
-          cargo tauri signer sign \
+          # Use the npm @tauri-apps/cli (not cargo-tauri) since it's already
+          # installed as a devDependency and available via bun.
+          bun run tauri signer sign \
             -k "$TAURI_SIGNING_PRIVATE_KEY" \
             -p "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" \
             "$DMG_FILE" 2>&1
