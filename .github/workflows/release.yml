@@ -10,9 +10,6 @@
 #      The pubkey in src-tauri/tauri.conf.json must match .tauri/key.pub.
 #   3. Push a tag:  git tag v0.6.2 && git push origin v0.6.2
 #
-#   Tauri v2 env var mapping:
-#     TAURI_SIGNING_PRIVATE_KEY         ← GitHub secret TAURI_PRIVATE_KEY
-#     TAURI_SIGNING_PRIVATE_KEY_PASSWORD ← GitHub secret TAURI_KEY_PASSWORD
 
 name: Release
 on:
@@ -67,8 +64,6 @@ jobs:
       - name: Build macOS DMG
         run: bun run tauri build --target aarch64-apple-darwin --bundles dmg
         env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
           # Ad-hoc sign Apple Silicon builds so downloaded apps are not treated as damaged.
           # This is not Apple Developer ID signing/notarization; users may still need to allow the app in Privacy & Security.
           APPLE_SIGNING_IDENTITY: "-"
@@ -119,6 +114,31 @@ jobs:
 
           echo "DMG=$DMG_DIR/KeyDock-aarch64.dmg" >> "$GITHUB_OUTPUT"
           echo "DMG_DIR=$DMG_DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Sign DMG for Tauri updater
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+        run: |
+          DMG_DIR="${{ steps.artifacts.outputs.DMG_DIR }}"
+          DMG_FILE="$DMG_DIR/KeyDock-aarch64.dmg"
+          if [ ! -f "$DMG_FILE" ]; then
+            echo "::error::DMG not found at $DMG_FILE"
+            exit 1
+          fi
+          echo "Signing $DMG_FILE..."
+          cargo tauri signer sign \
+            -k "$TAURI_SIGNING_PRIVATE_KEY" \
+            -p "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" \
+            "$DMG_FILE" 2>&1
+          if [ -f "${DMG_FILE}.sig" ]; then
+            echo "Signature created successfully"
+            cat "${DMG_FILE}.sig"
+          else
+            echo "::error::Signature was not created"
+            exit 1
+          fi
 
       - name: Generate update.json
         shell: bash
