@@ -56,7 +56,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDFENjJCQ0MxM0RDNDdERTMKUldUamZjUTl3YnhpSGY0YW5uOE9RMVcwUnZjWC96T0tVT2ZtazNpM2gyaGdNeEZnRmRJU1dITEEK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDMyOTdEMjY3QTI5QkY1MkQKUldRdDladWlaOUtYTXBpWXBPQ3o3NzJRdmhlM3JaNnA3SkJXeGZrL1ErblRyaWRyNnRlS2VCaEQK",
       "endpoints": [
         "https://github.com/0xfig-labs/KeyDock/releases/latest/download/update.json"
       ],
