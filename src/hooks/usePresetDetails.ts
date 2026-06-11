@@ -5,6 +5,7 @@ import type { PresetEntry, ActivePreset } from "@/types"
 import {
   addPresetEntry as addEntryApi,
   removePresetEntry as removeEntryApi,
+  updatePresetEntryEnvName as updateEntryEnvNameApi,
   listPresetEntries,
   activatePreset as activatePresetApi,
   getActivePreset,
@@ -19,6 +20,7 @@ export interface UsePresetDetails {
   activating: boolean
   refresh: (presetId: string) => Promise<void>
   addEntry: (presetId: string, fieldId: string, envName?: string | null) => Promise<PresetEntry | null>
+  updateEntryEnvName: (presetId: string, oldEnvName: string, newEnvName: string) => Promise<PresetEntry | null>
   removeEntry: (presetId: string, envName: string) => Promise<void>
   activate: (presetId: string) => Promise<void>
   deactivate: () => Promise<void>
@@ -74,6 +76,24 @@ export function usePresetDetails(): UsePresetDetails {
           }
           return [...prev, entry]
         })
+        await refreshActive()
+        return entry
+      } catch (e) {
+        show(extractMessage(e), "error")
+        return null
+      }
+    },
+    [show, refreshActive],
+  )
+
+  const updateEntryEnvName = useCallback(
+    async (presetId: string, oldEnvName: string, newEnvName: string): Promise<PresetEntry | null> => {
+      try {
+        const entry = await updateEntryEnvNameApi(presetId, oldEnvName, newEnvName)
+        show(`Env var renamed: ${oldEnvName} → ${entry.envName}`, "success")
+        setEntries((prev) =>
+          prev.map((e) => (e.envName === oldEnvName ? entry : e)),
+        )
         await refreshActive()
         return entry
       } catch (e) {
@@ -160,6 +180,7 @@ export function usePresetDetails(): UsePresetDetails {
     activating,
     refresh,
     addEntry,
+    updateEntryEnvName,
     removeEntry,
     activate,
     deactivate,

@@ -219,7 +219,8 @@
     "previewTitle": "环境变量预览",
     "previewDesc": "这些环境变量将在新终端中可用：",
     "removeEntry": "移除",
-    "activateHint": "激活此预设以将环境变量注入新终端"
+    "activateHint": "激活此预设以将环境变量注入新终端",
+    "editEnvName": "点击编辑环境变量名称"
   },
   "variableMapper": {
     "newMapping": "新建映射",

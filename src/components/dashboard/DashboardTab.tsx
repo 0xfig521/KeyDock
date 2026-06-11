@@ -12,6 +12,7 @@ import {
   AlertTriangleIcon,
   PowerIcon,
   TerminalIcon,
+  ClockIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { listen } from "@tauri-apps/api/event"
@@ -19,14 +20,23 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ShellIntegrationCard } from "@/components/dashboard/ShellIntegrationCard"
 import { useShellIntegration } from "@/hooks/useShellIntegration"
-import { getActivePreset } from "@/lib/tauri"
+import { getActivePreset, listSecretFields } from "@/lib/tauri"
 import type {
   ActivePreset,
   AuditLog,
+  SecretField,
 } from "@/types"
 import type { UseSecrets } from "@/hooks/useSecrets"
 import type { UseAudit } from "@/hooks/useAudit"
 import type { SidebarTab } from "@/components/layout/Sidebar"
+
+interface ExpiringField {
+  field: SecretField
+  secretName: string
+  secretId: string
+  daysLeft: number
+  isExpired: boolean
+}
 
 interface DashboardTabProps {
   secrets: UseSecrets
@@ -69,6 +79,47 @@ export function DashboardTab({
   const [recentLogs, setRecentLogs] = useState<AuditLog[]>([])
   const [activePreset, setActivePreset] = useState<ActivePreset | null>(null)
   const shellIntegration = useShellIntegration()
+
+  const [expiringFields, setExpiringFields] = useState<ExpiringField[]>([])
+
+  useEffect(() => {
+    const secretsList = secrets.secrets
+    if (!secretsList.length) {
+      setExpiringFields([])
+      return
+    }
+
+    const secretMap = new Map(secretsList.map((s) => [s.id, s.name]))
+
+    void Promise.all(secretsList.map((s) => listSecretFields(s.id).catch(() => [] as SecretField[])))
+      .then((allFields) => {
+        const now = Date.now()
+        const sevenDays = 7 * 24 * 60 * 60 * 1000
+        const result: ExpiringField[] = []
+
+        for (let i = 0; i < allFields.length; i++) {
+          const secretId = secretsList[i].id
+          const secretName = secretMap.get(secretId) ?? "Unknown"
+          for (const field of allFields[i]) {
+            if (!field.expiresAt) continue
+            const expTime = new Date(field.expiresAt + "T23:59:59").getTime()
+            const diff = expTime - now
+            const daysLeft = Math.round(diff / (24 * 60 * 60 * 1000))
+            const isExpired = diff < 0
+            if (isExpired || diff <= sevenDays) {
+              result.push({ field, secretName, secretId, daysLeft, isExpired })
+            }
+          }
+        }
+
+        result.sort((a, b) => {
+          if (a.isExpired !== b.isExpired) return a.isExpired ? -1 : 1
+          return a.daysLeft - b.daysLeft
+        })
+        setExpiringFields(result)
+      })
+      .catch(() => setExpiringFields([]))
+  }, [secrets.secrets])
 
   useEffect(() => {
     void audit.refresh()
@@ -207,6 +258,57 @@ export function DashboardTab({
               {t("dashboard.goToPresets")}
               <ChevronRightIcon className="size-3.5 ml-1" />
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Expiring Secrets Alert */}
+      {expiringFields.length > 0 && (
+        <div className="rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="size-7 rounded-lg bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center">
+              <ClockIcon className="size-3.5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+              {expiringFields.some((e) => e.isExpired)
+                ? "Expired keys detected"
+                : "Keys expiring soon"}
+            </h3>
+            <Badge variant="secondary" className="text-[9px] font-mono bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-500/20 ml-auto">
+              {expiringFields.length}
+            </Badge>
+          </div>
+          <div className="space-y-1">
+            {expiringFields.map(({ field, secretName, daysLeft, isExpired }) => (
+              <div
+                key={field.id}
+                className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-white/50 dark:bg-white/[0.02] hover:bg-amber-100/50 dark:hover:bg-amber-950/10 transition-colors cursor-pointer"
+                onClick={() => onSelectTab("secrets")}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className={`size-2 rounded-full shrink-0 ${isExpired ? "bg-rose-500" : daysLeft <= 1 ? "bg-rose-400" : "bg-amber-400"}`} />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold text-foreground truncate">
+                        {secretName}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground/60">·</span>
+                      <span className="text-[10px] font-mono text-muted-foreground truncate">
+                        {field.label}
+                      </span>
+                    </div>
+                    {field.envName && (
+                      <code className="text-[9px] font-mono text-muted-foreground/60">
+                        {field.envName}
+                      </code>
+                    )}
+                  </div>
+                </div>
+                <div className={`text-[10px] font-mono shrink-0 ml-2 ${isExpired ? "text-rose-500 dark:text-rose-400 font-semibold" : "text-amber-600 dark:text-amber-400"}`}>
+                  {isExpired ? "Expired" : `${daysLeft}d`}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -77,6 +77,12 @@ export const listPresetEntries = (preset: string) =>
 export const removePresetEntry = (preset: string, envName: string) =>
   invoke<void>("remove_preset_entry", { preset, envName })
 
+export const updatePresetEntryEnvName = (
+  preset: string,
+  oldEnvName: string,
+  newEnvName: string,
+) => invoke<PresetEntry>("update_preset_entry_env_name", { preset, oldEnvName, newEnvName })
+
 export const exportPresetEnv = (preset: string) =>
   invoke<string>("export_preset_env", { preset })
 

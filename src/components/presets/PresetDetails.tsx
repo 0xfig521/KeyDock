@@ -8,6 +8,7 @@ import {
   SearchIcon,
   XIcon,
   LayersIcon,
+  CheckIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
@@ -43,6 +44,14 @@ export function PresetDetails({
   // Add-entry panel
   const [showAddPanel, setShowAddPanel] = useState(false)
   const [selectedSecretId, setSelectedSecretId] = useState<string | null>(null)
+
+  // Inline envName override when adding a field
+  const [editingFieldId, setEditingFieldId] = useState<string | null>(null)
+  const [customEnvName, setCustomEnvName] = useState("")
+
+  // Inline envName edit for existing entries
+  const [editingEntryEnvName, setEditingEntryEnvName] = useState<string | null>(null)
+  const [editingEntryNewEnvName, setEditingEntryNewEnvName] = useState("")
 
   const [previewResult, setPreviewResult] = useState<string[]>([])
 
@@ -84,8 +93,8 @@ export function PresetDetails({
   }, [details, isActive, preset.id])
 
   const handleAddEntry = useCallback(
-    async (fieldId: string) => {
-      const entry = await details.addEntry(preset.id, fieldId)
+    async (fieldId: string, envName?: string | null) => {
+      const entry = await details.addEntry(preset.id, fieldId, envName)
       if (entry) {
         setShowAddPanel(false)
         setSelectedSecretId(null)
@@ -93,6 +102,53 @@ export function PresetDetails({
     },
     [details, preset.id],
   )
+
+  // Inline envName override — start editing a field's envName before adding
+  const handleStartFieldEdit = useCallback((fieldId: string, defaultEnvName: string) => {
+    setEditingFieldId(fieldId)
+    setCustomEnvName(defaultEnvName)
+  }, [])
+
+  const handleConfirmAddEntry = useCallback(
+    async (fieldId: string) => {
+      const envName = customEnvName.trim()
+      if (!envName) return
+      await handleAddEntry(fieldId, envName)
+      setEditingFieldId(null)
+      setCustomEnvName("")
+    },
+    [customEnvName, handleAddEntry],
+  )
+
+  const handleCancelFieldEdit = useCallback(() => {
+    setEditingFieldId(null)
+    setCustomEnvName("")
+  }, [])
+
+  // Inline envName edit for existing entries
+  const handleStartEntryEdit = useCallback(
+    (entry: { envName: string }) => {
+      setEditingEntryEnvName(entry.envName)
+      setEditingEntryNewEnvName(entry.envName)
+    },
+    [],
+  )
+
+  const handleConfirmEntryEdit = useCallback(async () => {
+    const newName = editingEntryNewEnvName.trim().toUpperCase()
+    if (!newName || newName === editingEntryEnvName) {
+      setEditingEntryEnvName(null)
+      return
+    }
+    const result = await details.updateEntryEnvName(preset.id, editingEntryEnvName!, newName)
+    if (result) {
+      setEditingEntryEnvName(null)
+    }
+  }, [editingEntryNewEnvName, editingEntryEnvName, details, preset.id])
+
+  const handleCancelEntryEdit = useCallback(() => {
+    setEditingEntryEnvName(null)
+  }, [])
 
   const handleRemoveEntry = useCallback(
     async (envName: string) => {
@@ -381,17 +437,60 @@ export function PresetDetails({
                                         {field.label}
                                       </span>
                                     </div>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon-xs"
-                                      onClick={() =>
-                                        handleAddEntry(field.id)
-                                      }
-                                      className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 hover:bg-emerald-500/10 shrink-0"
-                                      title={t("presetDetails.importDefaults")}
-                                    >
-                                      <PlusIcon className="size-3" />
-                                    </Button>
+                                    {editingFieldId === field.id ? (
+                                      <div className="flex items-center gap-1">
+                                        <Input
+                                          value={customEnvName}
+                                          onChange={(e) =>
+                                            setCustomEnvName(
+                                              e.target.value.toUpperCase(),
+                                            )
+                                          }
+                                          className="w-36 h-7 text-[11px] font-mono"
+                                          autoFocus
+                                          onKeyDown={(e) => {
+                                            if (e.key === "Enter")
+                                              handleConfirmAddEntry(field.id)
+                                            if (e.key === "Escape")
+                                              handleCancelFieldEdit()
+                                          }}
+                                        />
+                                        <Button
+                                          size="icon-xs"
+                                          onClick={() =>
+                                            handleConfirmAddEntry(field.id)
+                                          }
+                                          className="text-emerald-600 dark:text-emerald-400"
+                                        >
+                                          <CheckIcon className="size-3" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon-xs"
+                                          onClick={handleCancelFieldEdit}
+                                          className="text-muted-foreground"
+                                        >
+                                          <XIcon className="size-3" />
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon-xs"
+                                        onClick={() =>
+                                          handleStartFieldEdit(
+                                            field.id,
+                                            field.envName!,
+                                          )
+                                        }
+                                        className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 hover:bg-emerald-500/10 shrink-0"
+                                        title={t(
+                                          "presetDetails.importDefaults",
+                                        )}
+                                      >
+                                        <PlusIcon className="size-3" />
+                                      </Button>
+                                    )}
                                   </div>
                                 ))
                             )}
@@ -445,9 +544,40 @@ export function PresetDetails({
                 >
                   {/* Entry content */}
                   <div className="flex items-center gap-2 min-w-0">
-                    <code className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 shrink-0">
-                      {entry.envName}
-                    </code>
+                    {editingEntryEnvName === entry.envName ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          value={editingEntryNewEnvName}
+                          onChange={(e) =>
+                            setEditingEntryNewEnvName(
+                              e.target.value.toUpperCase(),
+                            )
+                          }
+                          className="w-36 h-6 text-[11px] font-mono"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleConfirmEntryEdit()
+                            if (e.key === "Escape") handleCancelEntryEdit()
+                          }}
+                          onBlur={handleCancelEntryEdit}
+                        />
+                        <Button
+                          size="icon-xs"
+                          onClick={handleConfirmEntryEdit}
+                          className="text-emerald-600 dark:text-emerald-400"
+                        >
+                          <CheckIcon className="size-2.5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <code
+                        className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 shrink-0 cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1 transition-colors"
+                        onClick={() => handleStartEntryEdit(entry)}
+                        title={t("presetDetails.editEnvName")}
+                      >
+                        {entry.envName}
+                      </code>
+                    )}
                     <span className="text-muted-foreground/40 select-none">
                       ·
                     </span>

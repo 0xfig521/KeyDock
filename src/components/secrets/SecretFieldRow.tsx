@@ -181,9 +181,9 @@ function SecretFieldRowImpl({
           </div>
         </div>
 
-        {isExpired && (
-          <div className="text-[9px] font-mono text-rose-500 dark:text-rose-400">
-            Expired: {field.expiresAt}
+        {field.expiresAt && (
+          <div className={`text-[9px] font-mono ${isExpired ? "text-rose-500 dark:text-rose-400" : "text-amber-500 dark:text-amber-400"}`}>
+            {isExpired ? "Expired" : "Expires"}: {field.expiresAt}
           </div>
         )}
 

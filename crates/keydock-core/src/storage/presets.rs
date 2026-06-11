@@ -1,8 +1,8 @@
 use super::shell::{current_active_preset, write_active_env};
 use super::{log_audit, mask_value, now, validate_env_name, with_tx, AppStore};
 use crate::{
-    decrypt_secret, ActivePreset, Preset, PresetEntry, PresetInclude, PresetInput, PresetPreview,
-    PresetTemplate, PresetTemplateField, PresetEnv,
+    decrypt_secret, ActivePreset, Preset, PresetEntry, PresetEnv, PresetInclude, PresetInput,
+    PresetPreview, PresetTemplate, PresetTemplateField,
 };
 use anyhow::{anyhow, Result};
 use rusqlite::{params, OptionalExtension};
@@ -158,6 +158,55 @@ impl AppStore {
             )
         })?;
         self.refresh_active_preset_env()
+    }
+
+    pub fn update_preset_entry_env_name(
+        &self,
+        preset_id_or_name: &str,
+        old_env_name: &str,
+        new_env_name: &str,
+    ) -> Result<PresetEntry> {
+        let preset = self.resolve_preset(preset_id_or_name)?;
+        validate_env_name(new_env_name)?;
+        let now_ts = now();
+        let preset_id = preset.id.clone();
+
+        with_tx(&self.conn, |conn| {
+            // Check if new env_name already exists in this preset
+            let existing: Option<String> = conn
+                .query_row(
+                    "SELECT id FROM preset_entries WHERE preset_id = ?1 AND env_name = ?2 AND env_name != ?3",
+                    params![&preset_id, new_env_name, old_env_name],
+                    |row| row.get(0),
+                )
+                .optional()?;
+            if let Some(_id) = existing {
+                return Err(anyhow!(
+                    "env name '{new_env_name}' already exists in this preset"
+                ));
+            }
+
+            let affected = conn.execute(
+                "UPDATE preset_entries SET env_name = ?1, updated_at = ?2 WHERE preset_id = ?3 AND env_name = ?4",
+                params![new_env_name, &now_ts, &preset_id, old_env_name],
+            )?;
+            if affected == 0 {
+                return Err(anyhow!("preset entry not found: {old_env_name}"));
+            }
+            log_audit(
+                conn,
+                "rename_preset_entry",
+                None,
+                Some(&preset_id),
+                Some(new_env_name),
+            )
+        })?;
+
+        let entry = self
+            .fetch_preset_entry(&preset.id, new_env_name)?
+            .ok_or_else(|| anyhow!("preset entry not found after rename"))?;
+        self.refresh_active_preset_env()?;
+        Ok(entry)
     }
 
     pub fn add_secret_default_fields_to_preset(

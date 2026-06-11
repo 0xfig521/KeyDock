@@ -219,7 +219,8 @@
     "previewTitle": "Env Var Preview",
     "previewDesc": "These env vars will be available in new shells:",
     "removeEntry": "Remove",
-    "activateHint": "Activate this preset to inject env vars into new shells"
+    "activateHint": "Activate this preset to inject env vars into new shells",
+    "editEnvName": "Click to edit env var name"
   },
   "variableMapper": {
     "newMapping": "New Mapping",

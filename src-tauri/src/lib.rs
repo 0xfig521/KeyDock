@@ -166,6 +166,20 @@ fn remove_preset_entry(
 }
 
 #[tauri::command]
+fn update_preset_entry_env_name(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    preset: String,
+    old_env_name: String,
+    new_env_name: String,
+) -> CommandResult<PresetEntry> {
+    let entry = state
+        .with_store(|s| s.update_preset_entry_env_name(&preset, &old_env_name, &new_env_name))?;
+    let _ = app.emit("active-preset-changed", ());
+    Ok(entry)
+}
+
+#[tauri::command]
 fn export_preset_env(state: State<'_, AppState>, preset: String) -> CommandResult<String> {
     Ok(state.with_store(|s| s.export_preset_env(&preset))?)
 }
@@ -536,6 +550,7 @@ pub fn run() {
             add_preset_entry,
             list_preset_entries,
             remove_preset_entry,
+            update_preset_entry_env_name,
             export_preset_env,
             activate_preset,
             deactivate_active_preset,

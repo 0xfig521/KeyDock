@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.3 - 2026-06-11
+
+### Features
+- Add expiration date picker (Calendar+Popover) for ENV-type secret fields — pick a date when the key expires
+- Always show expiration date in field rows (amber for active, red for expired)
+- Add 7-day expiry warning card on the dashboard with per-field details
+- Add inline env name editing for preset entries
+
 ## 0.6.2 - 2026-06-08
 
 ### Fixes

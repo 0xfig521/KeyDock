@@ -68,6 +68,7 @@ export function SecretFieldList({
       sensitive: field.sensitive,
       envName: field.envName ?? "",
       section: inferFieldSection(field),
+      expiresAt: field.expiresAt ?? "",
     })
     setEditingFieldId(field.id)
     setEditingFieldLabel(field.label)
@@ -94,7 +95,7 @@ export function SecretFieldList({
           section: form.section,
           sortOrder: null,
           enabled: true,
-          expiresAt: null,
+          expiresAt: form.expiresAt || null,
         }
 
         if (editingFieldId) {
