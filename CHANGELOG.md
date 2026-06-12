@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.4 - 2026-06-12
+
+### Fixes
+- Fix download progress stuck at 0% during update — track chunk lengths and compute real percentage
+- Show detailed error messages in update UI instead of generic text
+
 ## 0.6.3 - 2026-06-11
 
 ### Features

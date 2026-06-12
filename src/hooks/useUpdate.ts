@@ -69,15 +69,24 @@ export function useUpdate() {
 
       setUpdate((prev) => ({ ...prev, status: "downloading", downloading: true, errorMessage: undefined }))
 
+      let totalBytes = 0
+      let downloadedBytes = 0
+
       await result.downloadAndInstall((event) => {
         switch (event.event) {
           case "Started": {
-            const total = event.data.contentLength ?? 0
-            if (total > 0) setUpdate((prev) => ({ ...prev, progress: 0 }))
+            totalBytes = event.data.contentLength ?? 0
+            downloadedBytes = 0
+            if (totalBytes > 0) setUpdate((prev) => ({ ...prev, progress: 0 }))
             break
           }
-          case "Progress":
+          case "Progress": {
+            downloadedBytes += event.data.chunkLength ?? 0
+            if (totalBytes > 0) {
+              setUpdate((prev) => ({ ...prev, progress: Math.min(downloadedBytes / totalBytes, 1) }))
+            }
             break
+          }
           case "Finished":
             setUpdate((prev) => ({ ...prev, progress: 1 }))
             break

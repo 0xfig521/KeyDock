@@ -12,14 +12,21 @@ interface SettingsTabProps {
   onInstallUpdate: () => void
 }
 
-/** Map updater error codes from useUpdate to i18n keys */
-function errorMessageKey(errorMessage?: string): string {
+/** Map updater error codes from useUpdate to translated message and raw detail. */
+function formatUpdateError(t: (key: string) => string, errorMessage?: string): { summary: string; detail: string | null } {
+  if (!errorMessage) return { summary: t("settings.updateError"), detail: null }
+
   switch (errorMessage) {
-    case "network_error": return "settings.updateNetworkError"
-    case "signature_error": return "settings.updateSignatureError"
-    case "tls_error": return "settings.updateTlsError"
-    case "parse_error": return "settings.updateParseError"
-    default: return "settings.updateError"
+    case "network_error":
+      return { summary: t("settings.updateNetworkError"), detail: "network_error" }
+    case "signature_error":
+      return { summary: t("settings.updateSignatureError"), detail: "signature_error" }
+    case "tls_error":
+      return { summary: t("settings.updateTlsError"), detail: "tls_error" }
+    case "parse_error":
+      return { summary: t("settings.updateParseError"), detail: "parse_error" }
+    default:
+      return { summary: t("settings.updateError"), detail: errorMessage }
   }
 }
 
@@ -179,17 +186,27 @@ export function SettingsTab({
                 <span className="text-xs text-emerald-600 dark:text-emerald-400">{t("settings.updateDone")}</span>
               )}
 
-              {update.status === "error" && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-red-500">{t(errorMessageKey(update.errorMessage))}</span>
-                  <button
-                    onClick={onCheckUpdate}
-                    className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
-                  >
-                    {t("settings.checkForUpdates")}
-                  </button>
-                </div>
-              )}
+              {update.status === "error" && (() => {
+                const { summary, detail } = formatUpdateError(t, update.errorMessage)
+                return (
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-red-500">{summary}</span>
+                      <button
+                        onClick={onCheckUpdate}
+                        className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                      >
+                        {t("settings.checkForUpdates")}
+                      </button>
+                    </div>
+                    {detail && (
+                      <span className="text-[10px] text-red-400/70 font-mono break-all select-text">
+                        {detail}
+                      </span>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
 
             {update.status === "available" && (
